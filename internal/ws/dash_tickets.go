@@ -11,7 +11,7 @@ import (
 // LoadTicketSnapshot returns recent tickets for the operator dashboard.
 func LoadTicketSnapshot(ctx context.Context, pool *pgxpool.Pool) ([]TicketWire, error) {
 	if pool == nil {
-		return nil, nil
+		return []TicketWire{}, nil
 	}
 	rows, err := pool.Query(ctx, `
 SELECT t.id, t.ticket_ref, t.title, t.status, t.priority, t.created_at, a.human_id
@@ -25,7 +25,7 @@ LIMIT 500
 	}
 	defer rows.Close()
 
-	var out []TicketWire
+	out := make([]TicketWire, 0)
 	for rows.Next() {
 		var t TicketWire
 		var tid uuid.UUID

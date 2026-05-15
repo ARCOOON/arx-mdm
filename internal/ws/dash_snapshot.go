@@ -25,7 +25,7 @@ type assetRow struct {
 // LoadAssetSnapshot queries the database and builds dashboard asset rows.
 func LoadAssetSnapshot(ctx context.Context, pool *pgxpool.Pool, c2 *Hub) ([]AssetWire, error) {
 	if pool == nil {
-		return nil, nil
+		return []AssetWire{}, nil
 	}
 	rows, err := pool.Query(ctx, `
 SELECT id, human_id, hostname, cert_serial, os_type, last_seen, COALESCE(metadata, '{}'::jsonb)::text
@@ -44,7 +44,7 @@ ORDER BY human_id
 		}
 	}
 
-	var out []AssetWire
+	out := make([]AssetWire, 0)
 	for rows.Next() {
 		var r assetRow
 		if err := rows.Scan(&r.ID, &r.HumanID, &r.Hostname, &r.CertSerial, &r.OsType, &r.LastSeen, &r.Metadata); err != nil {

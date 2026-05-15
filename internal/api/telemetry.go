@@ -114,7 +114,12 @@ func NewTelemetryHandler(d TelemetryDeps) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 		defer cancel()
 
-		assetID, humanID, err := upsertAssetFromTelemetry(ctx, d.Pool, d.AdvisoryLockKey, serial, payload, deriveAssetOsType(payload))
+		result, err := ProcessTelemetry(ctx, TelemetryProcessDeps{
+			Pool:            d.Pool,
+			AdvisoryLockKey: d.AdvisoryLockKey,
+			OnHeartbeat:     d.OnHeartbeat,
+			OnAccepted:      d.OnTelemetryAccepted,
+		}, serial, payload)
 		if err != nil {
 			d.Logger.Error("telemetry upsert failed",
 				"err", err,
@@ -127,8 +132,8 @@ func NewTelemetryHandler(d TelemetryDeps) http.HandlerFunc {
 		}
 
 		d.Logger.Info("telemetry accepted",
-			"asset_id", assetID.String(),
-			"human_id", humanID,
+			"asset_id", result.AssetID.String(),
+			"human_id", result.HumanID,
 			"cert_serial", serial,
 			"hostname", payload.Hostname,
 			"os_family", payload.OSFamily,
@@ -136,30 +141,9 @@ func NewTelemetryHandler(d TelemetryDeps) http.HandlerFunc {
 			"request_id", r.Header.Get("X-Request-Id"),
 		)
 
-		if d.OnHeartbeat != nil {
-			d.OnHeartbeat(ctx, assetID)
-		}
-		if d.OnTelemetryAccepted != nil {
-			d.OnTelemetryAccepted(serial, humanID, assetID, payload)
-		}
-
-		osType := deriveAssetOsType(payload)
-		resp := map[string]any{
-			"status":   "ok",
-			"asset_id": assetID.String(),
-			"human_id": humanID,
-		}
-		if err := AppendAndroidPolicyToTelemetryResponse(ctx, d.Pool, assetID, osType, resp); err != nil {
-			d.Logger.Error("android policy telemetry attachment failed",
-				"err", err,
-				"asset_id", assetID.String(),
-				"request_id", r.Header.Get("X-Request-Id"),
-			)
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(result.Response)
 	}
 }
 

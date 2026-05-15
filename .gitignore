@@ -101,6 +101,7 @@ tmp/
 temp/
 *.tmp
 *.bak
+tests/
 
 # --- Debug and profiling ---
 debug/

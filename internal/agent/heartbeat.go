@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ARCOOON/arx-mdm/internal/agent/telemetry"
 	"github.com/ARCOOON/arx-mdm/internal/api"
 	"github.com/ARCOOON/arx-mdm/pkg/packagemanager"
-	"github.com/ARCOOON/arx-mdm/pkg/system"
 )
 
 // HeartbeatOptions configures the periodic telemetry sender.
@@ -57,9 +57,9 @@ func RunHeartbeat(ctx context.Context, logger *slog.Logger, opts HeartbeatOption
 	defer ticker.Stop()
 
 	send := func() error {
-		info, err := system.CollectSystemInfo()
+		snap, err := telemetry.Collect()
 		if err != nil {
-			return fmt.Errorf("agent: collect system info: %w", err)
+			return fmt.Errorf("agent: collect telemetry: %w", err)
 		}
 		inv, _ := packagemanager.ListInstalled()
 		sw := make([]api.TelemetryInstalledApp, 0, len(inv))
@@ -69,14 +69,14 @@ func RunHeartbeat(ctx context.Context, logger *slog.Logger, opts HeartbeatOption
 			})
 		}
 		payload := api.TelemetryPayload{
-			Hostname:          info.Hostname,
-			OSFamily:          info.OSFamily,
-			OSVersion:         info.OSVersion,
-			TotalRAMBytes:     info.TotalRAMBytes,
-			CPUModel:          info.CPUModel,
-			CPULogicalCores:   info.CPULogicalCores,
-			CPUUsagePercent:   info.CPUUsagePercent,
-			MemoryUsedBytes:   info.MemoryUsedBytes,
+			Hostname:          snap.Hostname,
+			OSFamily:          snap.OSFamily,
+			OSVersion:         snap.OSVersion,
+			TotalRAMBytes:     snap.TotalRAMBytes,
+			CPUModel:          snap.CPUModel,
+			CPULogicalCores:   snap.CPULogicalCores,
+			CPUUsagePercent:   snap.CPUUsagePercent,
+			MemoryUsedBytes:   snap.UsedRAMBytes,
 			InstalledSoftware: sw,
 		}
 		body, err := json.Marshal(payload)

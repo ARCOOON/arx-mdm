@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"arx-mdm/pkg/system"
+	"github.com/ARCOOON/arx-mdm/pkg/system"
 )
 
 const (

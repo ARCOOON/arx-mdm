@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/cli"
-	"arx-mdm/internal/database"
-	"arx-mdm/internal/pki"
+	"github.com/ARCOOON/arx-mdm/internal/cli"
+	"github.com/ARCOOON/arx-mdm/internal/database"
+	"github.com/ARCOOON/arx-mdm/internal/pki"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"

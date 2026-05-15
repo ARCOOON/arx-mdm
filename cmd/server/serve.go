@@ -14,14 +14,14 @@ import (
 	"syscall"
 	"time"
 
-	"arx-mdm/internal/api"
-	"arx-mdm/internal/auth"
-	"arx-mdm/internal/database"
-	"arx-mdm/internal/notifications"
-	"arx-mdm/internal/pki"
-	"arx-mdm/internal/scheduler"
-	"arx-mdm/internal/serverinstall"
-	"arx-mdm/internal/ws"
+	"github.com/ARCOOON/arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/database"
+	"github.com/ARCOOON/arx-mdm/internal/notifications"
+	"github.com/ARCOOON/arx-mdm/internal/pki"
+	"github.com/ARCOOON/arx-mdm/internal/scheduler"
+	"github.com/ARCOOON/arx-mdm/internal/serverinstall"
+	"github.com/ARCOOON/arx-mdm/internal/ws"
 
 	"github.com/google/uuid"
 )

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/internal/api"
 
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5"

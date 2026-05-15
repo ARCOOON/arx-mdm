@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/auth"
 
 	"github.com/google/uuid"
 )

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"arx-mdm/internal/pki"
+	"github.com/ARCOOON/arx-mdm/internal/pki"
 
 	"github.com/google/uuid"
 )

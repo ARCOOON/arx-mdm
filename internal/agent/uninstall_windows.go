@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"arx-mdm/pkg/system"
+	"github.com/ARCOOON/arx-mdm/pkg/system"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"

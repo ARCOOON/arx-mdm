@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/internal/api"
 )
 
 // Agent → server file transfer wire types (not broadcast to dashboards).

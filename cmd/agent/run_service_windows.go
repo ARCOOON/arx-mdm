@@ -10,9 +10,9 @@ import (
 	"log/slog"
 	"time"
 
-	"arx-mdm/internal/agent"
-	"arx-mdm/internal/ws"
-	"arx-mdm/pkg/system"
+	"github.com/ARCOOON/arx-mdm/internal/agent"
+	"github.com/ARCOOON/arx-mdm/internal/ws"
+	"github.com/ARCOOON/arx-mdm/pkg/system"
 
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/windows/svc"

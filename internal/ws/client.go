@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/agent"
+	"github.com/ARCOOON/arx-mdm/internal/agent"
 
 	"github.com/gorilla/websocket"
 )

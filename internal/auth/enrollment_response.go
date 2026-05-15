@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"arx-mdm/internal/pki"
+	"github.com/ARCOOON/arx-mdm/internal/pki"
 )
 
 // EnrollAPIResponse is the JSON body returned by POST /v1/enroll on success.

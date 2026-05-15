@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/api"
-	"arx-mdm/pkg/packagemanager"
-	"arx-mdm/pkg/system"
+	"github.com/ARCOOON/arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/pkg/packagemanager"
+	"github.com/ARCOOON/arx-mdm/pkg/system"
 )
 
 // HeartbeatOptions configures the periodic telemetry sender.

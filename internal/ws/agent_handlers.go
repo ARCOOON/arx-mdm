@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"arx-mdm/internal/agent"
-	"arx-mdm/pkg/packagemanager"
-	"arx-mdm/pkg/system"
+	"github.com/ARCOOON/arx-mdm/internal/agent"
+	"github.com/ARCOOON/arx-mdm/pkg/packagemanager"
+	"github.com/ARCOOON/arx-mdm/pkg/system"
 
 	"github.com/gorilla/websocket"
 )

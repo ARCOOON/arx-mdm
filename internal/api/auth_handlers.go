@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/auth"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

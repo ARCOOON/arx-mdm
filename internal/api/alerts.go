@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/auth"
-	"arx-mdm/internal/notifications"
+	"github.com/ARCOOON/arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/notifications"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

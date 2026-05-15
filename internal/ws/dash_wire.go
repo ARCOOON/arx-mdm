@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/internal/api"
 
 	"github.com/google/uuid"
 )

@@ -3,7 +3,7 @@ package ws
 import (
 	"sync"
 
-	"arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/auth"
 
 	"github.com/gorilla/websocket"
 )

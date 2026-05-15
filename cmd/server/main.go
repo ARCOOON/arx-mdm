@@ -14,6 +14,7 @@ import (
 
 	"github.com/ARCOOON/arx-mdm/internal/cli"
 	"github.com/ARCOOON/arx-mdm/internal/database"
+	"github.com/ARCOOON/arx-mdm/internal/envfile"
 	"github.com/ARCOOON/arx-mdm/internal/pki"
 
 	"github.com/google/uuid"
@@ -36,6 +37,11 @@ const (
 )
 
 func main() {
+	if err := envfile.LoadFromCWD(); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: load .env: %v\n", err)
+	}
+	ensureStandaloneDatabaseURL()
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	root := newRootCmd(logger)
 	if err := root.Execute(); err != nil {
@@ -204,6 +210,39 @@ func withRequestID(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-Id", rid)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// ensureStandaloneDatabaseURL maps docker-compose style POSTGRES_* vars to ARX_DATABASE_URL when unset.
+func ensureStandaloneDatabaseURL() {
+	if strings.TrimSpace(os.Getenv(envDatabaseURL)) != "" {
+		return
+	}
+	pass := strings.TrimSpace(os.Getenv("POSTGRES_PASSWORD"))
+	if pass == "" {
+		return
+	}
+	user := strings.TrimSpace(os.Getenv("POSTGRES_USER"))
+	if user == "" {
+		user = "arx"
+	}
+	db := strings.TrimSpace(os.Getenv("POSTGRES_DB"))
+	if db == "" {
+		db = "arx"
+	}
+	host := strings.TrimSpace(os.Getenv("POSTGRES_HOST"))
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := strings.TrimSpace(os.Getenv("POSTGRES_PORT"))
+	if port == "" {
+		port = "5432"
+	}
+	sslmode := strings.TrimSpace(os.Getenv("POSTGRES_SSLMODE"))
+	if sslmode == "" {
+		sslmode = "disable"
+	}
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, pass, host, port, db, sslmode)
+	_ = os.Setenv(envDatabaseURL, dsn)
 }
 
 func parseDashboardOrigins(raw string) []string {

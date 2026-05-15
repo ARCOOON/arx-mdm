@@ -248,6 +248,21 @@ func runServe(logger *slog.Logger) error {
 		RegisterFSUploadResultWaiter: c2Hub.RegisterFSUploadResultWaiter,
 	})
 
+	telemetryProcess := api.TelemetryProcessDeps{
+		Pool:            pool,
+		AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
+		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
+			alerter.ClearStaleAck(ctx, assetID)
+		},
+		OnAccepted: func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
+			msg, err := ws.MarshalTelemetryUpdate(c2Hub, certSerial, humanID, assetID, payload)
+			if err != nil {
+				return
+			}
+			dashHub.Broadcast(msg)
+		},
+	}
+
 	mux.HandleFunc("GET /v1/ws", ws.NewWSGatewayHandler(ws.WSGatewayDeps{
 		C2Hub:            c2Hub,
 		DashboardHub:     dashHub,
@@ -256,6 +271,13 @@ func runServe(logger *slog.Logger) error {
 		MTLSRequired:     mtlsReady,
 		DashboardJWT:     jwtSvc,
 		DashboardOrigins: dashboardOrigins,
+		AgentTelemetry: ws.AgentTelemetryDeps{
+			Pool:            pool,
+			Logger:          logger,
+			AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
+			OnHeartbeat:     telemetryProcess.OnHeartbeat,
+			OnAccepted:      telemetryProcess.OnAccepted,
+		},
 	}))
 
 	serverinstall.Register(mux, logger)

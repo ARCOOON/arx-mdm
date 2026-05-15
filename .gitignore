@@ -47,7 +47,9 @@ secrets/
 
 # --- Cryptographic material (PKI, TLS, enrollment) ---
 certs/
-**/pki/
+# Runtime PKI storage only; do not ignore internal/pki (Go embedded CA package).
+arx_pki_data/
+data/pki/
 *.pem
 *.key
 *.p12
@@ -58,7 +60,6 @@ certs/
 
 # --- Docker local data and database volumes ---
 postgres_data/
-arx_pki_data/
 data/postgres/
 .docker/
 

@@ -1,4 +1,4 @@
-module arx-mdm
+module github.com/ARCOOON/arx-mdm
 
 go 1.26.3
 

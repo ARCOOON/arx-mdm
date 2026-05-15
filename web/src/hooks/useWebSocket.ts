@@ -225,14 +225,14 @@ function useDashboardWebSocketState(authToken: string): DashboardWebSocketValue 
         switch (msg.type) {
           case 'asset_snapshot': {
             const next = new Map<string, AssetRow>()
-            for (const a of msg.assets) {
+            for (const a of msg.assets ?? []) {
               next.set(a.human_id, a)
             }
             setAssetsByID(next)
             break
           }
           case 'ticket_snapshot':
-            setTickets(msg.tickets)
+            setTickets(msg.tickets ?? [])
             break
           case 'telemetry_update':
             setAssetsByID((prev) => {

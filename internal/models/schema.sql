@@ -1,0 +1,3 @@
+-- Schema is owned by the server binary, not manual SQL clients.
+-- On startup, `arx-server` (or `arx-server serve`) applies versioned migrations from
+-- `internal/database/migrations/` via `internal/database/migrations.go`.

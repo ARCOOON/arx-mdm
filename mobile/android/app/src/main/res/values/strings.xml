@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ARX MDM</string>
+    <string name="device_admin_label">ARX Device Policy</string>
+    <string name="device_admin_description">ARX MDM device owner controller for managed Android endpoints.</string>
+</resources>

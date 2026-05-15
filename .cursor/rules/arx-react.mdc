@@ -1,0 +1,32 @@
+---
+description: React and UI guidelines for the ARX MDM administration dashboard. Focus on desktop density and real-time data.
+globs: *.tsx, *.ts, *.jsx, *.js
+alwaysApply: false
+---
+
+# ARX MDM React Guidelines
+
+Directives for building the frontend administration dashboard.
+
+## 1. Desktop-First Design
+
+**High data density. No mobile-first compromises.**
+
+- Design interfaces explicitly for resolutions of 1920x1080 and above.
+- Prioritize high data density, multi-pane views, and hierarchical sidebar navigation.
+- Do not simplify or hide critical administrative data for the sake of mobile responsiveness.
+
+## 2. Real-Time Architecture
+
+**WebSockets for dynamic data. Do not poll for telemetry.**
+
+- Use WebSockets to handle high-frequency data streams (CPU, RAM utilization graphs, remote terminal sessions).
+- Maintain application state efficiently using functional components and React Hooks.
+
+## 3. Consistent Tech Stack
+
+**Vite, Tailwind, Lucide.**
+
+- Utilize Vite for the build tooling.
+- Apply Tailwind CSS strictly for all styling requirements. Avoid custom CSS files unless absolutely necessary.
+- Use the `Lucide` icon library for all graphical iconography.

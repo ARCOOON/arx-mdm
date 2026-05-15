@@ -1,0 +1,37 @@
+---
+description: Core architectural, behavioral, and security guidelines for the ARX MDM project. Apply to all changes.
+globs: *
+alwaysApply: true
+---
+
+# ARX MDM Global Guidelines
+
+Behavioral and architectural directives to ensure high performance, security, and stability across the ARX MDM platform.
+
+## 1. Native API Mandate
+
+**No shell wrappers. Direct system calls only.**
+
+When implementing system-level interactions:
+- DO NOT use `exec.Command` to invoke `powershell`, `cmd`, `bash`, `apt`, or `netsh`.
+- For Windows: Utilize `golang.org/x/sys/windows` and the standard `registry` package.
+- For Linux: Utilize `syscall`, `golang.org/x/sys/unix`, and direct file parsing (e.g., `/proc`).
+- Push back if a feature seems to require a shell wrapper. Find the native API equivalent.
+
+## 2. Security First
+
+**Zero trust. mTLS everywhere.**
+
+When handling communications or authentication:
+- Ensure all Agent-Server traffic operates strictly over Mutual TLS (mTLS).
+- Use the embedded PKI in `internal/pki` (Go `crypto/x509`) for CA bootstrap and enrollment signing; do not require an external CA daemon.
+- Do not hardcode secrets or bypass certificate validation, even in development.
+
+## 3. Strict Naming Conventions
+
+**Follow the ARX Schema strictly. Do not deviate.**
+
+When generating IDs, models, or database entries:
+- Assets MUST follow: `arx-c-[num]` (Client), `arx-s-[num]` (Server), or `arx-[class]-[type]-[num]`.
+- Tickets MUST use defined prefixes: `INC-`, `REQ-`, `CHG-`, `PRJ-`.
+- Database Primary Keys MUST use UUIDs.

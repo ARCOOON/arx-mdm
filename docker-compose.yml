@@ -1,0 +1,61 @@
+# ARX MDM: PostgreSQL + unified server (API, WebSocket, embedded React dashboard, install artifacts).
+#
+# Prerequisites: `.env` with secrets (use scripts/bootstrap_server.sh on Ubuntu to generate).
+# Start: docker compose up -d --build
+#
+# Schema: the `arx-server` binary applies embedded SQL migrations on startup (no initdb SQL mounts).
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: arx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in environment}
+      POSTGRES_DB: arx
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - arx-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arx -d arx"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  arx-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${ARX_PUBLISH_PORT:-8080}:8080"
+    environment:
+      ARX_LISTEN_ADDR: ":8080"
+      ARX_DATABASE_URL: postgres://arx:${POSTGRES_PASSWORD}@postgres:5432/arx?sslmode=disable
+      ARX_PKI_STORAGE_PATH: /data/pki
+      ARX_JWT_SECRET: ${ARX_JWT_SECRET:?set ARX_JWT_SECRET in environment}
+      ARX_JWT_ISSUER: ${ARX_JWT_ISSUER:-arx-mdm}
+      ARX_JWT_TTL: ${ARX_JWT_TTL:-24h}
+      ARX_BOOTSTRAP_ADMIN_USERNAME: ${ARX_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      ARX_BOOTSTRAP_ADMIN_PASSWORD: ${ARX_BOOTSTRAP_ADMIN_PASSWORD:?set ARX_BOOTSTRAP_ADMIN_PASSWORD in environment}
+      ARX_DASHBOARD_ORIGINS: ${ARX_DASHBOARD_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080}
+      # Optional: HTTPS + mTLS for telemetry (mount PEMs and set the three vars below)
+      # ARX_TLS_CERT: /data/pki/server-fullchain.pem
+      # ARX_TLS_KEY: /data/pki/server.key
+      # ARX_MTLS_CLIENT_CA_BUNDLE: /data/pki/mtls-client-ca-bundle.pem
+    networks:
+      - arx-internal
+    volumes:
+      - arx_pki_data:/data/pki
+
+networks:
+  arx-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  arx_pki_data:

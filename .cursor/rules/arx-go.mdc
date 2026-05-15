@@ -1,0 +1,33 @@
+---
+description: Go development rules for ARX MDM Backend and Agent. Focus on low-level system integration and stability.
+globs: *.go
+alwaysApply: false
+---
+
+# ARX MDM Go Guidelines
+
+Guidelines for writing robust, system-level Go code for the ARX MDM Agent and Backend.
+
+## 1. Low-Level Execution
+
+**Minimize dependencies. Prefer standard library and official extensions.**
+
+- Avoid external C-bindings (cgo) whenever possible to ensure clean cross-compilation.
+- Use `golang.org/x/sys` packages for all OS-specific implementations.
+- The agent must operate autonomously as a background service (Windows Service via `windows/svc` or Linux Systemd unit).
+
+## 2. Robust Error Handling
+
+**Explicit returns. No panics.**
+
+- Handle all errors explicitly. Do not ignore returned error values.
+- Never use `panic()` in production execution paths.
+- Log errors verbosely with sufficient context for remote debugging.
+
+## 3. Standardized Architecture
+
+**Follow the standard Go project layout.**
+
+- `cmd/`: Entry points for executable binaries (e.g., `cmd/server`, `cmd/agent`).
+- `internal/`: Private application and library code (models, auth, ws).
+- `pkg/`: Library code intended for potential external use or distinct separation (e.g., system interactions).

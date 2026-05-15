@@ -1,0 +1,7 @@
+.git
+**/node_modules
+bin
+.env
+internal/serverinstall/dashboard
+internal/serverinstall/arx-agent-linux
+internal/serverinstall/arx-agent-windows.exe

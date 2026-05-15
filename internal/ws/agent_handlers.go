@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/ARCOOON/arx-mdm/internal/agent"
+	"github.com/ARCOOON/arx-mdm/internal/agent/cmdloop"
 	"github.com/ARCOOON/arx-mdm/pkg/packagemanager"
 	"github.com/ARCOOON/arx-mdm/pkg/system"
 
@@ -41,7 +42,16 @@ func (rt *agentRuntime) writeJSON(v any) error {
 	return rt.conn.WriteJSON(v)
 }
 
-func readCommandsUntilDead(ctx context.Context, logger *slog.Logger, conn *websocket.Conn) error {
+func init() {
+	cmdloop.Register(runAgentCommandLoop)
+}
+
+// RunAgentCommandLoop reads server downlink commands until the connection closes or ctx ends.
+func RunAgentCommandLoop(ctx context.Context, logger *slog.Logger, conn *websocket.Conn) error {
+	return runAgentCommandLoop(ctx, logger, conn)
+}
+
+func runAgentCommandLoop(ctx context.Context, logger *slog.Logger, conn *websocket.Conn) error {
 	rt := &agentRuntime{conn: conn, logger: logger}
 	done := make(chan struct{})
 	defer close(done)

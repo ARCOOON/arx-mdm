@@ -29,6 +29,7 @@ type WSGatewayDeps struct {
 	MTLSRequired     bool
 	DashboardJWT     *auth.JWTService
 	DashboardOrigins []string // allowed browser Origins for Sec-WebSocket-Protocol: arx-dashboard
+	AgentTelemetry   AgentTelemetryDeps
 }
 
 func dashboardProtoRequested(r *http.Request) bool {
@@ -164,11 +165,18 @@ func NewWSGatewayHandler(d WSGatewayDeps) http.HandlerFunc {
 		)
 
 		go writePump(session, d.Logger)
-		readPump(r, session, d.Pool, d.DashboardHub, d.Logger)
+		telDeps := d.AgentTelemetry
+		if telDeps.Pool == nil {
+			telDeps.Pool = d.Pool
+		}
+		if telDeps.Logger == nil {
+			telDeps.Logger = d.Logger
+		}
+		readPump(r, session, d.Pool, d.DashboardHub, d.Logger, telDeps)
 	}
 }
 
-func readPump(r *http.Request, s *agentSession, pool *pgxpool.Pool, dash *DashboardHub, logger *slog.Logger) {
+func readPump(r *http.Request, s *agentSession, pool *pgxpool.Pool, dash *DashboardHub, logger *slog.Logger, telDeps AgentTelemetryDeps) {
 	defer func() {
 		_ = s.conn.Close()
 		s.hub.unregister(s)
@@ -190,6 +198,13 @@ func readPump(r *http.Request, s *agentSession, pool *pgxpool.Pool, dash *Dashbo
 			return
 		}
 		_ = s.conn.SetReadDeadline(time.Now().Add(wsReadDeadline))
+		readCtx, readCancel := context.WithTimeout(r.Context(), 30*time.Second)
+		if tryHandleAgentTelemetry(readCtx, s.serial, data, telDeps) {
+			readCancel()
+			continue
+		}
+		readCancel()
+
 		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 		_ = ApplyPackageDeploymentOutcome(ctx, pool, s.serial, data, logger)
 		cancel()

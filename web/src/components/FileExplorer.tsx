@@ -229,12 +229,12 @@ export function FileExplorer({
           type="button"
           disabled={!c2Connected || busy}
           onClick={() => listDir(path)}
-          className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded border border-slate-300 dark:border-slate-700 px-2 py-0.5 text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-40"
         >
           <RefreshCw className="size-3" />
           Refresh
         </button>
-        <label className="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 hover:bg-slate-800 disabled:opacity-40">
+        <label className="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-300 dark:border-slate-700 px-2 py-0.5 text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-40">
           <Upload className="size-3" />
           Upload
           <input
@@ -262,23 +262,23 @@ export function FileExplorer({
       </nav>
 
       {error ? (
-        <div className="rounded border border-rose-900/60 bg-rose-950/30 px-2 py-1.5 text-[11px] text-rose-200">
+        <div className="rounded border border-rose-900/60 bg-rose-950/30 px-2 py-1.5 text-[11px] text-rose-800 dark:text-rose-200">
           {error}
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded border border-slate-800">
+      <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
         <table className="w-full border-collapse text-left text-[11px]">
           <thead className="bg-slate-900/80 text-slate-500">
             <tr>
-              <th className="border-b border-slate-800 px-2 py-2">Name</th>
-              <th className="border-b border-slate-800 px-2 py-2">Size</th>
-              <th className="border-b border-slate-800 px-2 py-2"> </th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Name</th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Size</th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2"> </th>
             </tr>
           </thead>
           <tbody className="text-slate-300">
             {hasParentDir(path) ? (
-              <tr className="border-b border-slate-800/80">
+              <tr className="border-b border-slate-200 dark:border-slate-800/80">
                 <td className="px-2 py-1.5" colSpan={3}>
                   <button
                     type="button"
@@ -291,7 +291,7 @@ export function FileExplorer({
               </tr>
             ) : null}
             {entries.map((e) => (
-              <tr key={e.name} className="border-b border-slate-800/80">
+              <tr key={e.name} className="border-b border-slate-200 dark:border-slate-800/80">
                 <td className="px-2 py-1.5">
                   {e.is_dir ? (
                     <button

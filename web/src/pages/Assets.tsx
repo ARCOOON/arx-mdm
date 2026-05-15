@@ -21,10 +21,10 @@ export function AssetsPage() {
   }, [lastCommandResult])
 
   return (
-    <div className="min-h-full bg-slate-950 px-6 py-4">
+    <div className="min-h-full bg-slate-50 px-6 py-4 dark:bg-slate-950">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Assets
           </h1>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -34,10 +34,10 @@ export function AssetsPage() {
         {hint}
       </div>
 
-      <div className="overflow-hidden rounded border border-slate-800 bg-slate-900/40">
+      <div className="overflow-hidden rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40">
         <table className="w-full border-collapse text-left text-[12px]">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-900/90 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900/90 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               <th className="px-2 py-1.5">ARX ID</th>
               <th className="px-2 py-1.5">Hostname</th>
               <th className="px-2 py-1.5">OS</th>
@@ -47,7 +47,7 @@ export function AssetsPage() {
               <th className="px-2 py-1.5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="tabular-nums text-slate-200">
+          <tbody className="tabular-nums text-slate-800 dark:text-slate-200">
             {assets.length === 0 ? (
               <tr>
                 <td
@@ -62,7 +62,7 @@ export function AssetsPage() {
               assets.map((a) => (
                 <tr
                   key={a.human_id}
-                  className="border-b border-slate-800/80 hover:bg-slate-800/30"
+                  className="border-b border-slate-200/80 hover:bg-slate-100 dark:border-slate-800/80 dark:hover:bg-slate-800/30"
                 >
                   <td className="px-2 py-1 font-mono text-[11px] text-sky-300/95">
                     <Link
@@ -72,7 +72,7 @@ export function AssetsPage() {
                       {a.human_id}
                     </Link>
                   </td>
-                  <td className="max-w-[200px] truncate px-2 py-1 font-medium text-slate-100">
+                  <td className="max-w-[200px] truncate px-2 py-1 font-medium text-slate-900 dark:text-slate-100">
                     {a.hostname || '—'}
                   </td>
                   <td className="max-w-[220px] truncate px-2 py-1 text-slate-400">
@@ -100,7 +100,7 @@ export function AssetsPage() {
                       type="button"
                       title="Send shutdown command"
                       disabled={pending === a.human_id}
-                      className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:border-rose-700/70 hover:bg-rose-950/40 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex items-center gap-1 rounded border border-slate-300 dark:border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-200 hover:border-rose-700/70 hover:bg-rose-950/40 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
                       onClick={() => {
                         setPending(a.human_id)
                         sendJson({

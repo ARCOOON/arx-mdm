@@ -150,12 +150,12 @@ export function AndroidPolicies({ assetId, humanId }: Props) {
         connections receive live updates over WebSocket.
       </p>
       {err ? (
-        <div className="rounded border border-rose-900/60 bg-rose-950/30 px-3 py-2 text-[12px] text-rose-200">
+        <div className="rounded border border-rose-900/60 bg-rose-950/30 px-3 py-2 text-[12px] text-rose-800 dark:text-rose-200">
           {err}
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between rounded border border-slate-800 bg-slate-900/30 px-3 py-2">
+      <div className="flex items-center justify-between rounded border border-slate-200 dark:border-slate-800 bg-slate-900/30 px-3 py-2">
         <span className="text-[12px] text-slate-200">Disable camera</span>
         <button
           type="button"
@@ -177,7 +177,7 @@ export function AndroidPolicies({ assetId, humanId }: Props) {
         </button>
       </div>
 
-      <div className="rounded border border-slate-800 bg-slate-900/30 px-3 py-3">
+      <div className="rounded border border-slate-200 dark:border-slate-800 bg-slate-900/30 px-3 py-3">
         <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
           Screen lock timeout (idle)
         </div>
@@ -190,14 +190,14 @@ export function AndroidPolicies({ assetId, humanId }: Props) {
               disabled={!canOperate || saving}
               value={timeoutSec}
               onChange={(e) => setTimeoutSec(e.target.value)}
-              className="ml-2 w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[12px] text-slate-100"
+              className="ml-2 w-24 rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-[12px] text-slate-100"
             />
           </label>
           <button
             type="button"
             disabled={!canOperate || saving}
             onClick={applyTimeout}
-            className="rounded bg-slate-700 px-3 py-1.5 text-[12px] font-medium text-slate-100 hover:bg-slate-600 disabled:opacity-40"
+            className="rounded bg-slate-700 px-3 py-1.5 text-[12px] font-medium text-slate-900 dark:text-slate-100 hover:bg-slate-600 disabled:opacity-40"
           >
             Apply
           </button>
@@ -211,7 +211,7 @@ export function AndroidPolicies({ assetId, humanId }: Props) {
         <div className="mb-2 text-[10px] font-semibold uppercase text-rose-300/90">
           Danger zone
         </div>
-        <p className="mb-3 text-[11px] text-rose-200/80">
+        <p className="mb-3 text-[11px] text-rose-800 dark:text-rose-200/80">
           Remote wipe issues a factory reset command on the next device check-in.
           {policy.wipe_requested ? ' Wipe is currently requested.' : ''}
         </p>

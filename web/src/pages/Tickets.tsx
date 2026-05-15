@@ -213,17 +213,17 @@ export function TicketsPage() {
   }
 
   return (
-    <div className="flex min-h-full min-w-0 flex-col bg-slate-950 px-4 py-3 lg:px-6">
+    <div className="flex min-h-full min-w-0 flex-col bg-slate-50 px-4 py-3 dark:bg-slate-950 lg:px-6">
       <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-100">Tickets</h1>
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Tickets</h1>
           <p className="mt-0.5 text-[11px] text-slate-500">
             Control plane records (INC-, REQ-, CHG-, PRJ-). Dense table + detail pane.
           </p>
         </div>
         <button
           type="button"
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700"
+          className="rounded border border-slate-400 dark:border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700"
           onClick={() => {
             setShowCreate((v) => !v)
             setCreateErr(null)
@@ -235,7 +235,7 @@ export function TicketsPage() {
 
       {showCreate ? (
         <form
-          className="mb-2 grid max-w-3xl grid-cols-2 gap-2 rounded border border-slate-800 bg-slate-900/50 p-2.5 lg:grid-cols-4"
+          className="mb-2 grid max-w-3xl grid-cols-2 gap-2 rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-2.5 lg:grid-cols-4"
           onSubmit={createTicket}
         >
           {createErr ? (
@@ -244,7 +244,7 @@ export function TicketsPage() {
           <label className="col-span-1 flex flex-col gap-0.5 text-[10px] font-medium uppercase text-slate-500">
             Kind
             <select
-              className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
               value={createKind}
               onChange={(e) => setCreateKind(e.target.value as (typeof KINDS)[number])}
             >
@@ -258,7 +258,7 @@ export function TicketsPage() {
           <label className="col-span-1 flex flex-col gap-0.5 text-[10px] font-medium uppercase text-slate-500">
             Status
             <select
-              className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
               value={createStatus}
               onChange={(e) => setCreateStatus(e.target.value)}
             >
@@ -272,7 +272,7 @@ export function TicketsPage() {
           <label className="col-span-1 flex flex-col gap-0.5 text-[10px] font-medium uppercase text-slate-500">
             Priority
             <select
-              className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
               value={createPriority}
               onChange={(e) => setCreatePriority(e.target.value)}
             >
@@ -286,7 +286,7 @@ export function TicketsPage() {
           <label className="col-span-1 flex flex-col gap-0.5 text-[10px] font-medium uppercase text-slate-500">
             Linked ARX ID
             <input
-              className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 font-mono text-[11px] text-slate-100"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 font-mono text-[11px] text-slate-900 dark:text-slate-100"
               placeholder="arx-c-1"
               value={createAsset}
               onChange={(e) => setCreateAsset(e.target.value)}
@@ -296,7 +296,7 @@ export function TicketsPage() {
             Title
             <input
               required
-              className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
               value={createTitle}
               onChange={(e) => setCreateTitle(e.target.value)}
             />
@@ -317,10 +317,10 @@ export function TicketsPage() {
         <p className="mb-2 text-[11px] text-rose-400/90">{listErr}</p>
       ) : null}
 
-      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-0 border border-slate-800 bg-slate-900/40 lg:grid-cols-[minmax(0,1fr)_min(440px,38vw)]">
-        <div className="min-w-0 overflow-auto border-slate-800 lg:border-r">
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-0 border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 lg:grid-cols-[minmax(0,1fr)_min(440px,38vw)]">
+        <div className="min-w-0 overflow-auto border-slate-200 lg:border-r dark:border-slate-800">
           <table className="w-full min-w-[720px] border-collapse text-left text-[12px]">
-            <thead className="sticky top-0 z-[1] border-b border-slate-800 bg-slate-900/95 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <thead className="sticky top-0 z-[1] border-b border-slate-200 bg-slate-100/95 text-[11px] dark:border-slate-800 dark:bg-slate-900/95 font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="whitespace-nowrap px-1.5 py-1">ID</th>
                 <th className="min-w-[200px] px-1.5 py-1">Title</th>
@@ -348,7 +348,7 @@ export function TicketsPage() {
                   return (
                     <tr
                       key={t.id}
-                      className={`cursor-pointer border-b border-slate-800/80 hover:bg-slate-800/35 ${
+                      className={`cursor-pointer border-b border-slate-200 dark:border-slate-800/80 hover:bg-slate-800/35 ${
                         sel ? 'bg-violet-950/25' : ''
                       }`}
                       onClick={() => setSelectedId(t.id)}
@@ -356,7 +356,7 @@ export function TicketsPage() {
                       <td className="whitespace-nowrap px-1.5 py-0.5 font-mono text-[11px] text-violet-300/95">
                         {t.ticket_ref}
                       </td>
-                      <td className="max-w-[1px] truncate px-1.5 py-0.5 font-medium text-slate-100">
+                      <td className="max-w-[1px] truncate px-1.5 py-0.5 font-medium text-slate-900 dark:text-slate-100">
                         {t.title}
                       </td>
                       <td className="whitespace-nowrap px-1.5 py-0.5 text-slate-400">{t.status}</td>
@@ -372,7 +372,7 @@ export function TicketsPage() {
           </table>
         </div>
 
-        <aside className="flex min-h-[280px] min-w-0 flex-col border-t border-slate-800 bg-slate-950/30 lg:min-h-0 lg:border-t-0">
+        <aside className="flex min-h-[280px] min-w-0 flex-col border-t border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-950/30 lg:min-h-0 lg:border-t-0">
           {!selectedId ? (
             <div className="flex flex-1 items-center justify-center px-3 py-8 text-center text-[11px] text-slate-500">
               Select a ticket to view details, edit fields, and manage resolutions.
@@ -383,7 +383,7 @@ export function TicketsPage() {
             <div className="p-3 text-[11px] text-rose-400/90">{detailErr}</div>
           ) : detail ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="border-b border-slate-800 px-2.5 py-2">
+              <div className="border-b border-slate-200 dark:border-slate-800 px-2.5 py-2">
                 <div className="font-mono text-[13px] font-semibold text-violet-300/95">
                   {detail.ticket.ticket_ref}
                 </div>
@@ -393,7 +393,7 @@ export function TicketsPage() {
                 <label className="block text-[10px] font-semibold uppercase text-slate-500">
                   Title
                   <input
-                    className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+                    className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
                     value={titleEdit}
                     onChange={(e) => setTitleEdit(e.target.value)}
                   />
@@ -402,7 +402,7 @@ export function TicketsPage() {
                   <label className="block text-[10px] font-semibold uppercase text-slate-500">
                     Status
                     <select
-                      className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+                      className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
                       value={statusEdit}
                       onChange={(e) => setStatusEdit(e.target.value)}
                     >
@@ -416,7 +416,7 @@ export function TicketsPage() {
                   <label className="block text-[10px] font-semibold uppercase text-slate-500">
                     Priority
                     <select
-                      className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[12px] text-slate-100"
+                      className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 text-[12px] text-slate-900 dark:text-slate-100"
                       value={priorityEdit}
                       onChange={(e) => setPriorityEdit(e.target.value)}
                     >
@@ -431,7 +431,7 @@ export function TicketsPage() {
                 <label className="block text-[10px] font-semibold uppercase text-slate-500">
                   Linked ARX ID
                   <input
-                    className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-1.5 py-1 font-mono text-[11px] text-slate-100"
+                    className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 font-mono text-[11px] text-slate-900 dark:text-slate-100"
                     placeholder="Clear to unlink"
                     value={assetEdit}
                     onChange={(e) => setAssetEdit(e.target.value)}
@@ -440,7 +440,7 @@ export function TicketsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded bg-slate-700 px-2 py-1 text-[11px] text-slate-100 hover:bg-slate-600 disabled:opacity-40"
+                    className="rounded bg-slate-800 px-2 py-1 text-[11px] text-white hover:bg-slate-700 disabled:opacity-40 dark:bg-slate-700 dark:hover:bg-slate-600"
                     disabled={savingDetail}
                     onClick={() => void saveTicketPatch()}
                   >

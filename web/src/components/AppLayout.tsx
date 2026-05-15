@@ -14,11 +14,8 @@ import {
 } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../context/AuthContext'
-
-const navCls =
-  'flex items-center gap-2 rounded px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white'
-const activeNavCls =
-  'bg-slate-800 text-white ring-1 ring-slate-700/80'
+import { shell } from '../lib/themeClasses'
+import { ThemeToggle } from './ThemeToggle'
 
 function statusDot(state: string) {
   switch (state) {
@@ -29,7 +26,7 @@ function statusDot(state: string) {
     case 'error':
       return 'bg-rose-500'
     default:
-      return 'bg-slate-500'
+      return 'bg-slate-400 dark:bg-slate-500'
   }
 }
 
@@ -39,27 +36,39 @@ export function AppLayout() {
   const navigate = useNavigate()
 
   return (
-    <div className="flex h-full min-h-0 bg-slate-950">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-slate-800 bg-slate-900/80">
-        <div className="border-b border-slate-800 px-3 py-2.5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            ARX MDM
-          </div>
-          <div className="text-sm font-semibold text-slate-100">Operations</div>
-          {user ? (
-            <div className="mt-1 truncate text-[10px] text-slate-500" title={user.username}>
-              {user.username}
-              <span className="text-slate-600"> · </span>
-              <span className="font-mono text-slate-400">{user.role}</span>
+    <div className="flex h-full min-h-0 bg-slate-50 dark:bg-slate-950">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                ARX MDM
+              </div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Operations
+              </div>
+              {user ? (
+                <div
+                  className="mt-1 truncate text-[10px] text-slate-500"
+                  title={user.username}
+                >
+                  {user.username}
+                  <span className="text-slate-400 dark:text-slate-600"> · </span>
+                  <span className="font-mono text-slate-600 dark:text-slate-400">
+                    {user.role}
+                  </span>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            <ThemeToggle />
+          </div>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 p-2">
           <NavLink
             to="/"
             end
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <LayoutDashboard className="size-3.5 shrink-0 opacity-80" />
@@ -69,7 +78,7 @@ export function AppLayout() {
             to="/assets"
             end
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <HardDrive className="size-3.5 shrink-0 opacity-80" />
@@ -78,7 +87,7 @@ export function AppLayout() {
           <NavLink
             to="/software"
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <Package className="size-3.5 shrink-0 opacity-80" />
@@ -87,7 +96,7 @@ export function AppLayout() {
           <NavLink
             to="/automations"
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <Timer className="size-3.5 shrink-0 opacity-80" />
@@ -96,7 +105,7 @@ export function AppLayout() {
           <NavLink
             to="/tickets"
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <Ticket className="size-3.5 shrink-0 opacity-80" />
@@ -105,7 +114,7 @@ export function AppLayout() {
           <NavLink
             to="/knowledge"
             className={({ isActive }) =>
-              `${navCls} ${isActive ? activeNavCls : ''}`
+              `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
             <BookOpen className="size-3.5 shrink-0 opacity-80" />
@@ -115,7 +124,7 @@ export function AppLayout() {
             <NavLink
               to="/audit"
               className={({ isActive }) =>
-                `${navCls} ${isActive ? activeNavCls : ''}`
+                `${shell.nav} ${isActive ? shell.navActive : ''}`
               }
             >
               <ClipboardList className="size-3.5 shrink-0 opacity-80" />
@@ -126,7 +135,7 @@ export function AppLayout() {
             <NavLink
               to="/settings"
               className={({ isActive }) =>
-                `${navCls} ${isActive ? activeNavCls : ''}`
+                `${shell.nav} ${isActive ? shell.navActive : ''}`
               }
             >
               <Bell className="size-3.5 shrink-0 opacity-80" />
@@ -137,7 +146,7 @@ export function AppLayout() {
             <NavLink
               to="/users"
               className={({ isActive }) =>
-                `${navCls} ${isActive ? activeNavCls : ''}`
+                `${shell.nav} ${isActive ? shell.navActive : ''}`
               }
             >
               <Users className="size-3.5 shrink-0 opacity-80" />
@@ -145,10 +154,10 @@ export function AppLayout() {
             </NavLink>
           ) : null}
         </nav>
-        <div className="border-t border-slate-800 p-2.5">
+        <div className="border-t border-slate-200 p-2.5 dark:border-slate-800">
           <button
             type="button"
-            className="mb-2 flex w-full items-center justify-center gap-2 rounded border border-slate-700 px-2 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800"
+            className={`mb-2 flex w-full items-center justify-center gap-2 px-2 py-1.5 text-[11px] ${shell.btnSecondary}`}
             onClick={() => {
               logout()
               navigate('/login', { replace: true })
@@ -157,7 +166,7 @@ export function AppLayout() {
             <LogOut className="size-3.5" />
             Sign out
           </button>
-          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
             <Radio className="size-3.5 text-slate-500" />
             <span className="font-mono uppercase">{connectionState}</span>
             <span
@@ -166,7 +175,7 @@ export function AppLayout() {
             />
           </div>
           {lastError ? (
-            <div className="mt-1 line-clamp-2 font-mono text-[10px] text-rose-400/90">
+            <div className="mt-1 line-clamp-2 font-mono text-[10px] text-rose-600 dark:text-rose-400/90">
               {lastError}
             </div>
           ) : null}

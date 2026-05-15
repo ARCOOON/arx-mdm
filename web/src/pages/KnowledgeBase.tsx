@@ -123,7 +123,7 @@ export function KnowledgeBasePage() {
   const preview = useMemo(() => md, [md])
 
   return (
-    <div className="p-6 text-slate-100">
+    <div className="p-6 text-slate-900 dark:text-slate-100">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold">Knowledge base</h1>
@@ -135,7 +135,7 @@ export function KnowledgeBasePage() {
           <button
             type="button"
             onClick={openNew}
-            className="inline-flex items-center gap-2 rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 hover:bg-white"
+            className="inline-flex items-center gap-2 rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
           >
             <FilePlus className="size-3.5" />
             New document
@@ -152,12 +152,12 @@ export function KnowledgeBasePage() {
           {docs.map((d) => (
             <article
               key={d.id}
-              className="flex flex-col rounded border border-slate-800 bg-slate-900/40 p-3"
+              className="flex flex-col rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 p-3"
             >
               <div className="flex items-start gap-2">
                 <BookOpen className="mt-0.5 size-4 shrink-0 text-slate-500" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-sm font-medium text-slate-100">{d.title}</h2>
+                  <h2 className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{d.title}</h2>
                   <p className="mt-1 text-[10px] text-slate-500">
                     {new Date(d.created_at).toLocaleString()}
                   </p>
@@ -167,7 +167,7 @@ export function KnowledgeBasePage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+                  className="rounded border border-slate-300 dark:border-slate-700 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-200 dark:hover:bg-slate-800"
                   onClick={() => openView(d)}
                 >
                   {canOperate ? 'Open' : 'View'}
@@ -192,8 +192,8 @@ export function KnowledgeBasePage() {
 
       {editorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-slate-800 bg-slate-950 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white shadow-2xl dark:bg-slate-950">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-2">
               <span className="text-sm font-medium text-slate-200">
                 {editingId ? 'Edit document' : 'New document'}
               </span>
@@ -206,25 +206,25 @@ export function KnowledgeBasePage() {
               </button>
             </div>
             <div className="grid min-h-0 flex-1 gap-0 md:grid-cols-2">
-              <div className="flex min-h-0 flex-col border-b border-slate-800 p-3 md:border-b-0 md:border-r">
+              <div className="flex min-h-0 flex-col border-b border-slate-200 dark:border-slate-800 p-3 md:border-b-0 md:border-r">
                 <input
-                  className="mb-2 rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm"
+                  className="mb-2 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
                 <textarea
-                  className="min-h-[280px] flex-1 resize-none rounded border border-slate-700 bg-slate-900 p-2 font-mono text-xs leading-relaxed text-slate-100"
+                  className="min-h-[280px] flex-1 resize-none rounded border border-slate-300 bg-white p-2 font-mono text-xs leading-relaxed text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Markdown content"
                   value={md}
                   onChange={(e) => setMd(e.target.value)}
                 />
               </div>
-              <div className="min-h-0 overflow-auto p-3 text-sm leading-relaxed text-slate-300 [&_a]:text-sky-400 [&_code]:rounded [&_code]:bg-slate-800 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5">
+              <div className="min-h-0 overflow-auto p-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300 [&_a]:text-sky-600 [&_a]:dark:text-sky-400 [&_code]:rounded [&_code]:bg-slate-200 [&_code]:px-1 [&_code]:dark:bg-slate-800 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-100 [&_pre]:p-2 [&_pre]:dark:bg-slate-900 [&_ul]:list-disc [&_ul]:pl-5">
                 <ReactMarkdown>{preview}</ReactMarkdown>
               </div>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-800 px-4 py-2">
+            <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 dark:border-slate-800">
               {saveErr ? (
                 <span className="text-xs text-rose-400">{saveErr}</span>
               ) : (
@@ -248,8 +248,8 @@ export function KnowledgeBasePage() {
 
       {readOnlyDoc ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-lg border border-slate-800 bg-slate-950 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white shadow-2xl dark:bg-slate-950">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-2">
               <span className="text-sm font-medium text-slate-200">{readOnlyDoc.title}</span>
               <button
                 type="button"
@@ -259,7 +259,7 @@ export function KnowledgeBasePage() {
                 <X className="size-4" />
               </button>
             </div>
-            <div className="max-h-[calc(85vh-3rem)] overflow-auto p-4 text-sm leading-relaxed text-slate-300 [&_a]:text-sky-400 [&_code]:rounded [&_code]:bg-slate-800 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-2 [&_ul]:list-disc [&_ul]:pl-5">
+            <div className="max-h-[calc(85vh-3rem)] overflow-auto p-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300 [&_a]:text-sky-600 [&_a]:dark:text-sky-400 [&_code]:rounded [&_code]:bg-slate-200 [&_code]:px-1 [&_code]:dark:bg-slate-800 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-100 [&_pre]:p-2 [&_pre]:dark:bg-slate-900 [&_ul]:list-disc [&_ul]:pl-5">
               <ReactMarkdown>{readOnlyDoc.content_markdown}</ReactMarkdown>
             </div>
           </div>

@@ -94,14 +94,14 @@ export function UsersPage() {
   }
 
   return (
-    <div className="p-6 text-slate-100">
+    <div className="p-6 text-slate-900 dark:text-slate-100">
       <h1 className="text-lg font-semibold">User management</h1>
       <p className="mt-1 text-xs text-slate-500">
         Admin-only. Create accounts and assign roles for the dashboard.
       </p>
 
       <form
-        className="mt-6 max-w-md space-y-3 rounded border border-slate-800 bg-slate-900/50 p-4"
+        className="mt-6 max-w-md space-y-3 rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-4"
         onSubmit={createUser}
       >
         <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -111,7 +111,7 @@ export function UsersPage() {
         <div className="grid gap-2 sm:grid-cols-2">
           <input
             placeholder="Username"
-            className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+            className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
             value={nuName}
             onChange={(e) => setNuName(e.target.value)}
             required
@@ -119,14 +119,14 @@ export function UsersPage() {
           <input
             type="password"
             placeholder="Password"
-            className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+            className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
             value={nuPass}
             onChange={(e) => setNuPass(e.target.value)}
             required
           />
         </div>
         <select
-          className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+          className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
           value={nuRole}
           onChange={(e) =>
             setNuRole(e.target.value as 'admin' | 'operator' | 'viewer')
@@ -139,7 +139,7 @@ export function UsersPage() {
         <button
           type="submit"
           disabled={creating}
-          className="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 hover:bg-white disabled:opacity-50"
+          className="rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-50"
         >
           {creating ? 'Creating…' : 'Create user'}
         </button>
@@ -154,9 +154,9 @@ export function UsersPage() {
         ) : err ? (
           <div className="text-sm text-rose-400">{err}</div>
         ) : (
-          <div className="overflow-auto rounded border border-slate-800">
+          <div className="overflow-auto rounded border border-slate-200 dark:border-slate-800">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-800 bg-slate-900/80 text-xs uppercase text-slate-500">
+              <thead className="border-b border-slate-200 bg-slate-100 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-900/80">
                 <tr>
                   <th className="px-3 py-2">Username</th>
                   <th className="px-3 py-2">Role</th>
@@ -166,7 +166,7 @@ export function UsersPage() {
               </thead>
               <tbody>
                 {rows.map((u) => (
-                  <tr key={u.id} className="border-b border-slate-800/80">
+                  <tr key={u.id} className="border-b border-slate-200 dark:border-slate-800/80">
                     <td className="px-3 py-2 font-mono text-xs">{u.username}</td>
                     <td className="px-3 py-2 text-xs text-slate-300">{u.role}</td>
                     <td className="px-3 py-2 text-xs text-slate-500">

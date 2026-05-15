@@ -178,9 +178,9 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="p-6 text-slate-100">
+    <div className="p-6 text-slate-900 dark:text-slate-100">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded border border-slate-700 bg-slate-900/80 p-2">
+        <div className="mt-0.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-900/80 p-2">
           <Bell className="size-5 text-amber-400/90" />
         </div>
         <div>
@@ -194,19 +194,19 @@ export function SettingsPage() {
       </div>
 
       {err ? (
-        <div className="mt-4 rounded border border-rose-900/60 bg-rose-950/40 px-3 py-2 text-xs text-rose-200">
+        <div className="mt-4 rounded border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 px-3 py-2 text-xs text-rose-800 dark:text-rose-200">
           {err}
         </div>
       ) : null}
       {msg ? (
-        <div className="mt-4 rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-xs text-slate-300">
+        <div className="mt-4 rounded border border-slate-300 dark:border-slate-700 bg-slate-900/50 px-3 py-2 text-xs text-slate-300">
           {msg}
         </div>
       ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <form
-          className="space-y-3 rounded border border-slate-800 bg-slate-900/50 p-4"
+          className="space-y-3 rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-4"
           onSubmit={saveSMTP}
         >
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -217,41 +217,41 @@ export function SettingsPage() {
             <input
               required
               placeholder="Host"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
               value={smtpHost}
               onChange={(e) => setSmtpHost(e.target.value)}
             />
             <input
               required
               placeholder="Port"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
               value={smtpPort}
               onChange={(e) => setSmtpPort(e.target.value)}
             />
             <input
               placeholder="User (optional)"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
               value={smtpUser}
               onChange={(e) => setSmtpUser(e.target.value)}
             />
             <input
               type="password"
               placeholder="Password (optional)"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
               value={smtpPass}
               onChange={(e) => setSmtpPass(e.target.value)}
             />
             <input
               required
               placeholder="From address"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm sm:col-span-2"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm sm:col-span-2"
               value={smtpFrom}
               onChange={(e) => setSmtpFrom(e.target.value)}
             />
             <input
               required
               placeholder="To (comma-separated)"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm sm:col-span-2"
+              className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm sm:col-span-2"
               value={smtpTo}
               onChange={(e) => setSmtpTo(e.target.value)}
             />
@@ -267,14 +267,14 @@ export function SettingsPage() {
           <button
             type="submit"
             disabled={smtpSaving}
-            className="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 hover:bg-white disabled:opacity-50"
+            className="rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-50"
           >
             {smtpSaving ? 'Saving…' : 'Save SMTP'}
           </button>
         </form>
 
         <form
-          className="space-y-3 rounded border border-slate-800 bg-slate-900/50 p-4"
+          className="space-y-3 rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-4"
           onSubmit={saveWebhook}
         >
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -284,14 +284,14 @@ export function SettingsPage() {
           <input
             required
             placeholder="Webhook URL (Slack, Discord, custom…)"
-            className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm"
+            className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-sm"
             value={hookURL}
             onChange={(e) => setHookURL(e.target.value)}
           />
           <button
             type="submit"
             disabled={hookSaving}
-            className="rounded bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 hover:bg-white disabled:opacity-50"
+            className="rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white disabled:opacity-50"
           >
             {hookSaving ? 'Saving…' : 'Save webhook'}
           </button>
@@ -299,7 +299,7 @@ export function SettingsPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="text-sm font-semibold text-slate-200">Configured channels</h2>
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Configured channels</h2>
         {loading ? (
           <p className="mt-2 text-xs text-slate-500">Loading…</p>
         ) : rows.length === 0 ? (
@@ -309,7 +309,7 @@ export function SettingsPage() {
             {rows.map((r) => (
               <li
                 key={r.id}
-                className="flex flex-wrap items-center gap-3 rounded border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs"
+                className="flex flex-wrap items-center gap-3 rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2 text-xs"
               >
                 <span className="font-mono text-[10px] uppercase text-slate-500">{r.type}</span>
                 <span className="text-slate-400">
@@ -328,7 +328,7 @@ export function SettingsPage() {
                   </label>
                   <button
                     type="button"
-                    className="flex items-center gap-1 rounded border border-slate-600 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                    className="flex items-center gap-1 rounded border border-slate-400 dark:border-slate-600 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-800 disabled:opacity-50"
                     disabled={testingId === r.id}
                     onClick={() => void sendTest(r.id)}
                     title="Send test alert"

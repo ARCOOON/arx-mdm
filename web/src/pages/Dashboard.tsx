@@ -18,6 +18,7 @@ import {
   WifiOff,
 } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { useTheme } from '../contexts/ThemeContext'
 import {
   fetchAnalyticsSummary,
   type AnalyticsSummary,
@@ -49,7 +50,9 @@ function osChartData(dist: Record<string, number> | undefined) {
 }
 
 export function DashboardPage() {
+  const { theme } = useTheme()
   const { assets, connectionState, tickets } = useWebSocket()
+  const isDark = theme === 'dark'
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [summaryErr, setSummaryErr] = useState<string | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
@@ -85,15 +88,15 @@ export function DashboardPage() {
   )
 
   return (
-    <div className="min-h-full border-b border-slate-800/80 bg-slate-950 px-6 py-4">
+    <div className="min-h-full border-b border-slate-200/80 bg-slate-50 px-6 py-4 dark:border-slate-800/80 dark:bg-slate-950">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Dashboard
           </h1>
           <p className="mt-0.5 text-xs text-slate-500">
             KPIs from REST analytics · fleet telemetry stream via{' '}
-            <code className="rounded bg-slate-900 px-1 py-0.5 font-mono text-[11px] text-slate-400">
+            <code className="rounded bg-slate-200 px-1 py-0.5 font-mono text-[11px] text-slate-600 dark:bg-slate-900 dark:text-slate-400">
               /v1/ws
             </code>
           </p>
@@ -101,7 +104,7 @@ export function DashboardPage() {
         <div className="flex items-center gap-3 text-right text-[11px] text-slate-500">
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
+            className="inline-flex items-center gap-1 rounded border border-slate-300 dark:border-slate-700 px-2 py-1 text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-200 dark:hover:bg-slate-800"
             onClick={() => void loadSummary()}
           >
             <RefreshCw className="size-3.5" />
@@ -115,7 +118,7 @@ export function DashboardPage() {
       </div>
 
       {summaryErr ? (
-        <div className="mb-3 rounded border border-amber-900/50 bg-amber-950/30 px-3 py-2 font-mono text-[11px] text-amber-200/90">
+        <div className="mb-3 rounded border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30 px-3 py-2 font-mono text-[11px] text-amber-900 dark:text-amber-200/90">
           Analytics: {summaryErr}
         </div>
       ) : null}
@@ -196,7 +199,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+        <div className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-3">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             OS distribution (registered)
           </h2>
@@ -227,21 +230,25 @@ export function DashboardPage() {
                       <Cell
                         key={i}
                         fill={PIE_COLORS[i % PIE_COLORS.length]}
-                        stroke="#0f172a"
+                        stroke={isDark ? '#0f172a' : '#f8fafc'}
                         strokeWidth={1}
                       />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
+                      background: isDark ? '#0f172a' : '#ffffff',
+                      border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
                       borderRadius: 6,
                       fontSize: 11,
+                      color: isDark ? '#e2e8f0' : '#1e293b',
                     }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: 11, color: '#94a3b8' }}
+                    wrapperStyle={{
+                      fontSize: 11,
+                      color: isDark ? '#94a3b8' : '#64748b',
+                    }}
                     formatter={(value) => String(value)}
                   />
                 </PieChart>
@@ -249,11 +256,11 @@ export function DashboardPage() {
             </div>
           )}
         </div>
-        <div className="rounded border border-slate-800 bg-slate-900/50 p-3">
+        <div className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-3">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Raw OS counts
           </h2>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px] text-slate-300">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px] text-slate-700 dark:text-slate-300">
             {Object.entries(summary?.os_distribution ?? {}).map(([k, v]) => (
               <div key={k} className="contents">
                 <dt className="text-slate-500">{k}</dt>
@@ -286,12 +293,12 @@ function MetricCard(props: {
   subtitle?: string
 }) {
   return (
-    <div className="rounded border border-slate-800 bg-slate-900/60 px-3 py-2.5 shadow-sm">
+    <div className="rounded border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 px-3 py-2.5 shadow-sm">
       <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">
         {props.icon}
         {props.label}
       </div>
-      <div className="font-mono text-xl font-semibold tabular-nums text-slate-100">
+      <div className="font-mono text-xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
         {props.value}
       </div>
       {props.subtitle ? (

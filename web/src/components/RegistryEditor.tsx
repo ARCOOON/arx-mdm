@@ -66,7 +66,7 @@ export function RegistryEditor({
 
   if (!isWindowsAsset) {
     return (
-      <div className="rounded border border-slate-800 bg-slate-900/40 p-4 text-xs text-slate-500">
+      <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 p-4 text-xs text-slate-500">
         Registry editor is available when the asset reports a Windows OS (native
         registry API).
       </div>
@@ -74,14 +74,14 @@ export function RegistryEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded border border-slate-800 bg-slate-900/40 p-3">
+    <div className="flex flex-col gap-3 rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 p-3">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         Registry
       </div>
       <label className="block text-[11px] text-slate-400">
         Key path
         <input
-          className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-100"
+          className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-900 dark:text-slate-100"
           value={keyPath}
           onChange={(e) => setKeyPath(e.target.value)}
           spellCheck={false}
@@ -90,7 +90,7 @@ export function RegistryEditor({
       <label className="block text-[11px] text-slate-400">
         Value name (empty = default value)
         <input
-          className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-100"
+          className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-900 dark:text-slate-100"
           value={valueName}
           onChange={(e) => setValueName(e.target.value)}
           spellCheck={false}
@@ -100,7 +100,7 @@ export function RegistryEditor({
         <label className="block text-[11px] text-slate-400">
           Type (write)
           <select
-            className="mt-0.5 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[12px] text-slate-100"
+            className="mt-0.5 w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-[12px] text-slate-900 dark:text-slate-100"
             value={valueType}
             onChange={(e) => setValueType(e.target.value)}
           >
@@ -116,7 +116,7 @@ export function RegistryEditor({
       <label className="block text-[11px] text-slate-400">
         Data
         <textarea
-          className="mt-0.5 min-h-[88px] w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-100"
+          className="mt-0.5 min-h-[88px] w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1 font-mono text-[12px] text-slate-900 dark:text-slate-100"
           value={data}
           onChange={(e) => setData(e.target.value)}
           spellCheck={false}
@@ -125,7 +125,7 @@ export function RegistryEditor({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-100 hover:bg-slate-700"
+          className="rounded border border-slate-400 dark:border-slate-600 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-900 dark:text-slate-100 hover:bg-slate-700"
           onClick={() => run('registry_read')}
         >
           Read

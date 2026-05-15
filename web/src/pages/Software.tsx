@@ -106,8 +106,8 @@ export function SoftwarePage() {
   }
 
   return (
-    <div className="min-h-full bg-slate-950 px-6 py-4 text-slate-200">
-      <h1 className="mb-1 text-lg font-semibold tracking-tight text-slate-100">
+    <div className="min-h-full bg-slate-50 px-6 py-4 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+      <h1 className="mb-1 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
         Software deployments
       </h1>
       <p className="mb-6 max-w-2xl text-[12px] text-slate-500">
@@ -117,13 +117,13 @@ export function SoftwarePage() {
       </p>
 
       {err ? (
-        <div className="mb-4 rounded border border-rose-900/60 bg-rose-950/40 px-3 py-2 text-[12px] text-rose-200">
+        <div className="mb-4 rounded border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 px-3 py-2 text-[12px] text-rose-800 dark:text-rose-200">
           {err}
         </div>
       ) : null}
 
       <div className="mb-8 grid gap-6 lg:grid-cols-2">
-        <section className="rounded border border-slate-800 bg-slate-900/30 p-4">
+        <section className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/30 p-4">
           <h2 className="mb-3 text-[11px] font-semibold uppercase text-slate-500">
             New catalog package
           </h2>
@@ -134,7 +134,7 @@ export function SoftwarePage() {
                 required
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 font-mono text-slate-900 dark:text-slate-100"
                 placeholder="e.g. Microsoft.VisualStudioCode"
               />
             </label>
@@ -143,7 +143,7 @@ export function SoftwarePage() {
               <input
                 value={newVer}
                 onChange={(e) => setNewVer(e.target.value)}
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 font-mono text-slate-900 dark:text-slate-100"
                 placeholder="empty = default / latest"
               />
             </label>
@@ -152,7 +152,7 @@ export function SoftwarePage() {
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
               >
                 {PKG_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -168,7 +168,7 @@ export function SoftwarePage() {
                   required
                   value={newCmd}
                   onChange={(e) => setNewCmd(e.target.value)}
-                  className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-slate-100"
+                  className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 font-mono text-slate-900 dark:text-slate-100"
                   placeholder="/usr/local/bin/my-installer --flag"
                 />
               </label>
@@ -183,7 +183,7 @@ export function SoftwarePage() {
           </form>
         </section>
 
-        <section className="rounded border border-slate-800 bg-slate-900/30 p-4">
+        <section className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/30 p-4">
           <h2 className="mb-3 text-[11px] font-semibold uppercase text-slate-500">
             Assign to asset
           </h2>
@@ -194,7 +194,7 @@ export function SoftwarePage() {
                 required
                 value={selAsset}
                 onChange={(e) => setSelAsset(e.target.value)}
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
               >
                 <option value="">Select…</option>
                 {assets.map((a) => (
@@ -210,7 +210,7 @@ export function SoftwarePage() {
                 required
                 value={selPkg}
                 onChange={(e) => setSelPkg(e.target.value)}
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
               >
                 <option value="">Select…</option>
                 {packages.map((p) => (
@@ -235,7 +235,7 @@ export function SoftwarePage() {
                 onChange={(e) =>
                   setDepOp(e.target.value as 'install' | 'uninstall')
                 }
-                className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
               >
                 <option value="install">install</option>
                 <option value="uninstall">uninstall</option>
@@ -256,20 +256,20 @@ export function SoftwarePage() {
         <h2 className="mb-2 text-[11px] font-semibold uppercase text-slate-500">
           Catalog
         </h2>
-        <div className="overflow-x-auto rounded border border-slate-800">
+        <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
           <table className="w-full border-collapse text-left text-[11px]">
             <thead className="bg-slate-900/80 text-slate-500">
               <tr>
-                <th className="border-b border-slate-800 px-2 py-2">Type</th>
-                <th className="border-b border-slate-800 px-2 py-2">Name</th>
-                <th className="border-b border-slate-800 px-2 py-2">Version</th>
-                <th className="border-b border-slate-800 px-2 py-2">install_cmd</th>
-                <th className="border-b border-slate-800 px-2 py-2" />
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Type</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Name</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Version</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">install_cmd</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2" />
               </tr>
             </thead>
             <tbody className="text-slate-300">
               {packages.map((p) => (
-                <tr key={p.id} className="border-b border-slate-800/80">
+                <tr key={p.id} className="border-b border-slate-200 dark:border-slate-800/80">
                   <td className="px-2 py-1.5 font-mono text-sky-300/90">{p.type}</td>
                   <td className="px-2 py-1.5 font-mono">{p.name}</td>
                   <td className="px-2 py-1.5 font-mono text-slate-500">
@@ -302,20 +302,20 @@ export function SoftwarePage() {
         <h2 className="mb-2 text-[11px] font-semibold uppercase text-slate-500">
           Recent deployments
         </h2>
-        <div className="overflow-x-auto rounded border border-slate-800">
+        <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
           <table className="w-full border-collapse text-left text-[11px]">
             <thead className="bg-slate-900/80 text-slate-500">
               <tr>
-                <th className="border-b border-slate-800 px-2 py-2">When</th>
-                <th className="border-b border-slate-800 px-2 py-2">Asset</th>
-                <th className="border-b border-slate-800 px-2 py-2">Package</th>
-                <th className="border-b border-slate-800 px-2 py-2">Status</th>
-                <th className="border-b border-slate-800 px-2 py-2">Error</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">When</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Asset</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Package</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Status</th>
+                <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Error</th>
               </tr>
             </thead>
             <tbody className="text-slate-300">
               {deployments.map((d) => (
-                <tr key={d.id} className="border-b border-slate-800/80">
+                <tr key={d.id} className="border-b border-slate-200 dark:border-slate-800/80">
                   <td className="whitespace-nowrap px-2 py-1.5 text-slate-500">
                     {new Date(d.created_at).toLocaleString()}
                   </td>

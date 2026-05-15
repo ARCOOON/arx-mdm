@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTheme } from '../contexts/ThemeContext'
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal as XTerm } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
@@ -36,6 +37,7 @@ export function Terminal({
   sendJson,
   subscribeAgentUplink,
 }: TerminalProps) {
+  const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<XTerm | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
@@ -51,13 +53,14 @@ export function Terminal({
       return
     }
 
+    const isDark = theme === 'dark'
     const term = new XTerm({
       cursorBlink: true,
       fontSize: 13,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
       theme: {
-        background: '#0f172a',
-        foreground: '#e2e8f0',
+        background: isDark ? '#0f172a' : '#f8fafc',
+        foreground: isDark ? '#e2e8f0' : '#1e293b',
         cursor: '#38bdf8',
       },
     })
@@ -127,7 +130,7 @@ export function Terminal({
       fitRef.current = null
       requestIdRef.current = null
     }
-  }, [connectionState, sendJson, subscribeAgentUplink, targetArxId])
+  }, [connectionState, sendJson, subscribeAgentUplink, targetArxId, theme])
 
   return (
     <div className="flex min-h-[320px] flex-col gap-2">
@@ -136,7 +139,7 @@ export function Terminal({
       </div>
       <div
         ref={containerRef}
-        className="min-h-[300px] flex-1 overflow-hidden rounded border border-slate-800 bg-slate-950 p-1"
+        className="min-h-[300px] flex-1 overflow-hidden rounded border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950"
       />
     </div>
   )

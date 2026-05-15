@@ -186,8 +186,8 @@ export function AssetDetailPage() {
       onClick={() => setTab(id)}
       className={`rounded px-2.5 py-1 text-[11px] font-medium ${
         tab === id
-          ? 'bg-slate-800 text-white ring-1 ring-slate-600'
-          : 'text-slate-500 hover:text-slate-300'
+          ? 'bg-slate-200 text-slate-900 ring-1 ring-slate-400 dark:bg-slate-800 dark:text-white dark:ring-slate-600'
+          : 'text-slate-600 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
       }`}
     >
       {label}
@@ -195,7 +195,7 @@ export function AssetDetailPage() {
   )
 
   return (
-    <div className="min-h-full bg-slate-950 px-6 py-4">
+    <div className="min-h-full bg-slate-50 px-6 py-4 dark:bg-slate-950">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link
           to="/assets"
@@ -204,7 +204,7 @@ export function AssetDetailPage() {
           <ArrowLeft className="size-3.5" />
           Assets
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+        <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           {decodedId}
         </h1>
         {asset ? (
@@ -221,7 +221,7 @@ export function AssetDetailPage() {
       </div>
 
       {asset ? (
-        <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-800 pb-2">
+        <div className="mb-4 flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800 pb-2">
           {tabBtn('overview', 'Overview')}
           {tabBtn('software', 'Installed software')}
           {tabBtn('files', 'Files')}
@@ -238,19 +238,19 @@ export function AssetDetailPage() {
       ) : tab === 'overview' ? (
         <>
           <div className="mb-6 grid gap-3 text-[12px] text-slate-300 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2">
+            <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
               <div className="text-[10px] font-semibold uppercase text-slate-500">
                 Hostname
               </div>
-              <div className="font-medium text-slate-100">{asset.hostname || '—'}</div>
+              <div className="font-medium text-slate-900 dark:text-slate-100">{asset.hostname || '—'}</div>
             </div>
-            <div className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2">
+            <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
               <div className="text-[10px] font-semibold uppercase text-slate-500">
                 OS
               </div>
               <div>{asset.os || '—'}</div>
             </div>
-            <div className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2">
+            <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
               <div className="text-[10px] font-semibold uppercase text-slate-500">
                 CPU
               </div>
@@ -262,7 +262,7 @@ export function AssetDetailPage() {
                 )}
               </div>
             </div>
-            <div className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2">
+            <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
               <div className="text-[10px] font-semibold uppercase text-slate-500">
                 RAM
               </div>
@@ -299,25 +299,25 @@ export function AssetDetailPage() {
             endpoint (no shell).
           </p>
           {pkgMsg ? (
-            <div className="rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-[12px] text-slate-200">
+            <div className="rounded border border-slate-300 dark:border-slate-700 bg-slate-900/50 px-3 py-2 text-[12px] text-slate-200">
               {pkgMsg}
             </div>
           ) : null}
-          <div className="overflow-x-auto rounded border border-slate-800">
+          <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
             <table className="w-full border-collapse text-left text-[11px]">
               <thead className="bg-slate-900/80 text-slate-500">
                 <tr>
-                  <th className="border-b border-slate-800 px-2 py-2">Name</th>
-                  <th className="border-b border-slate-800 px-2 py-2">Version</th>
-                  <th className="border-b border-slate-800 px-2 py-2">Source</th>
-                  <th className="border-b border-slate-800 px-2 py-2">Actions</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Name</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Version</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Source</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-slate-300">
                 {installed.map((app, i) => (
                   <tr
                     key={`${app.name}-${app.version}-${i}`}
-                    className="border-b border-slate-800/80"
+                    className="border-b border-slate-200 dark:border-slate-800/80"
                   >
                     <td className="max-w-[220px] truncate px-2 py-1.5">{app.name}</td>
                     <td className="px-2 py-1.5 font-mono text-slate-500">
@@ -378,11 +378,11 @@ export function AssetDetailPage() {
             package. Hostname changes use native OS APIs (no shell).
           </p>
           {hostMsg ? (
-            <div className="rounded border border-slate-700 bg-slate-900/50 px-3 py-2 text-[12px] text-slate-200">
+            <div className="rounded border border-slate-300 dark:border-slate-700 bg-slate-900/50 px-3 py-2 text-[12px] text-slate-200">
               {hostMsg}
             </div>
           ) : null}
-          <div className="max-w-lg space-y-2 rounded border border-slate-800 bg-slate-900/30 px-3 py-3">
+          <div className="max-w-lg space-y-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-900/30 px-3 py-3">
             <div className="text-[10px] font-semibold uppercase text-slate-500">
               Hostname
             </div>
@@ -391,7 +391,7 @@ export function AssetDetailPage() {
                 type="text"
                 value={hostInput}
                 onChange={(e) => setHostInput(e.target.value)}
-                className="min-w-[200px] flex-1 rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-[12px] text-slate-100"
+                className="min-w-[200px] flex-1 rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-[12px] text-slate-900 dark:text-slate-100"
                 placeholder="New hostname"
               />
               <button
@@ -405,23 +405,23 @@ export function AssetDetailPage() {
             </div>
           </div>
           {netErr ? (
-            <div className="rounded border border-rose-900/60 bg-rose-950/30 px-3 py-2 text-[12px] text-rose-200">
+            <div className="rounded border border-rose-900/60 bg-rose-950/30 px-3 py-2 text-[12px] text-rose-800 dark:text-rose-200">
               {netErr}
             </div>
           ) : null}
-          <div className="overflow-x-auto rounded border border-slate-800">
+          <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
             <table className="w-full border-collapse text-left text-[11px]">
               <thead className="bg-slate-900/80 text-slate-500">
                 <tr>
-                  <th className="border-b border-slate-800 px-2 py-2">Interface</th>
-                  <th className="border-b border-slate-800 px-2 py-2">MTU</th>
-                  <th className="border-b border-slate-800 px-2 py-2">Flags</th>
-                  <th className="border-b border-slate-800 px-2 py-2">Addresses</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Interface</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">MTU</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Flags</th>
+                  <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Addresses</th>
                 </tr>
               </thead>
               <tbody className="text-slate-300">
                 {ifaces.map((iface) => (
-                  <tr key={`${iface.index}-${iface.name}`} className="border-b border-slate-800/80">
+                  <tr key={`${iface.index}-${iface.name}`} className="border-b border-slate-200 dark:border-slate-800/80">
                     <td className="px-2 py-1.5 font-mono">{iface.name}</td>
                     <td className="px-2 py-1.5">{iface.mtu}</td>
                     <td className="px-2 py-1.5 text-slate-500">

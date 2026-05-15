@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@config '../tailwind.config.js';
 
 html,
 body,
@@ -8,5 +9,5 @@ body,
 
 body {
   margin: 0;
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
 }

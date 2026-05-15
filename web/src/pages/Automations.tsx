@@ -120,10 +120,10 @@ export function AutomationsPage() {
   }
 
   return (
-    <div className="min-h-full bg-slate-950 px-6 py-4">
+    <div className="min-h-full bg-slate-50 px-6 py-4 dark:bg-slate-950">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-100">
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Automations
           </h1>
           <p className="mt-0.5 max-w-xl text-xs text-slate-500">
@@ -133,7 +133,7 @@ export function AutomationsPage() {
         </div>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded border border-slate-700 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+          className="inline-flex items-center gap-1.5 rounded border border-slate-300 dark:border-slate-700 px-2.5 py-1 text-[11px] text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-200 dark:hover:bg-slate-800"
           onClick={() => void load()}
         >
           <RefreshCw className="size-3.5" />
@@ -142,13 +142,13 @@ export function AutomationsPage() {
       </div>
 
       {err ? (
-        <div className="mb-3 rounded border border-rose-900/60 bg-rose-950/40 px-3 py-2 font-mono text-[11px] text-rose-200">
+        <div className="mb-3 rounded border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 px-3 py-2 font-mono text-[11px] text-rose-800 dark:text-rose-200">
           {err}
         </div>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded border border-slate-800 bg-slate-900/50 p-4">
+        <section className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-4">
           <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             <Clock className="size-3.5" />
             New schedule
@@ -160,7 +160,7 @@ export function AutomationsPage() {
               <label className="block">
                 <span className="mb-0.5 block text-[11px] text-slate-500">Name</span>
                 <input
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                  className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -170,7 +170,7 @@ export function AutomationsPage() {
               <label className="block">
                 <span className="mb-0.5 block text-[11px] text-slate-500">Cron expression</span>
                 <input
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 font-mono text-[11px] text-slate-100"
+                  className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 font-mono text-[11px] text-slate-900 dark:text-slate-100"
                   value={cron}
                   onChange={(e) => setCron(e.target.value)}
                   required
@@ -179,7 +179,7 @@ export function AutomationsPage() {
               <label className="block">
                 <span className="mb-0.5 block text-[11px] text-slate-500">Action</span>
                 <select
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                  className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
                   value={action}
                   onChange={(e) =>
                     setAction(e.target.value as 'shutdown' | 'deploy_package')
@@ -214,7 +214,7 @@ export function AutomationsPage() {
                 </div>
                 {targetMode === 'os' ? (
                   <select
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                    className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
                     value={targetOs}
                     onChange={(e) => setTargetOs(e.target.value)}
                   >
@@ -226,7 +226,7 @@ export function AutomationsPage() {
                   </select>
                 ) : (
                   <select
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                    className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
                     value={targetAssetId}
                     onChange={(e) => setTargetAssetId(e.target.value)}
                   >
@@ -244,7 +244,7 @@ export function AutomationsPage() {
                 <label className="block">
                   <span className="mb-0.5 block text-[11px] text-slate-500">Package</span>
                   <select
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-slate-100"
+                    className="w-full rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-2 py-1.5 text-slate-900 dark:text-slate-100"
                     value={packageId}
                     onChange={(e) => setPackageId(e.target.value)}
                   >
@@ -274,7 +274,7 @@ export function AutomationsPage() {
           )}
         </section>
 
-        <section className="rounded border border-slate-800 bg-slate-900/50 p-4">
+        <section className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Active schedules
           </h2>
@@ -290,10 +290,10 @@ export function AutomationsPage() {
               {rows.map((row) => (
                 <li
                   key={row.id}
-                  className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-800/80 bg-slate-950/60 px-2.5 py-2"
+                  className="flex flex-wrap items-start justify-between gap-2 rounded border border-slate-200 bg-slate-50 dark:border-slate-800/80 dark:bg-slate-950/60 px-2.5 py-2"
                 >
                   <div className="min-w-0">
-                    <div className="font-medium text-slate-100">{row.name}</div>
+                    <div className="font-medium text-slate-900 dark:text-slate-100">{row.name}</div>
                     <div className="mt-0.5 font-mono text-[10px] text-slate-500">
                       {row.cron_schedule} · {row.action_type}
                     </div>
@@ -311,7 +311,7 @@ export function AutomationsPage() {
                   {canOperate ? (
                     <button
                       type="button"
-                      className="shrink-0 rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-300 hover:bg-slate-800"
+                      className="shrink-0 rounded border border-slate-300 dark:border-slate-700 px-2 py-1 text-[10px] text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-200 dark:hover:bg-slate-800"
                       onClick={() => void toggleActive(row)}
                     >
                       {row.is_active ? 'Pause' : 'Resume'}

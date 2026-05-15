@@ -1,0 +1,46 @@
+---
+description: Mandatory conversation headers when a new development phase starts in a new chat. Tracks phase numbers for consistency across sessions.
+globs: *
+alwaysApply: true
+---
+
+# Development Phase Naming (Conversations)
+
+Whenever a new development phase is initiated in a new chat, the AI must strictly ensure the conversation context and its first output begins with a header in this exact format:
+
+`# Phase XX: [Short Phase Description]`
+
+The AI must track the current phase number based on the project's history and ensure consistency.
+
+## Phase number sources (in priority order)
+
+1. **Explicit user declaration** — If the user names a phase (e.g. "start Phase 19"), use that number.
+2. **Prior chat in the same arc** — Continue the same `XX` until the user starts a genuinely new phase.
+   - Comments and docs that reference `Phase N` for feature work
+3. **Increment for a new phase** — When starting a new development phase in a **new** chat with no user override, use **latest known phase + 1** (zero-padded two digits: `01`–`99`).
+
+## When to emit the header
+
+- **Required:** First assistant message in a new chat that begins or continues a development phase.
+- **Required again:** When the user explicitly starts a new phase (e.g. "Phase 19: alerting UI").
+- **Optional but encouraged:** First message after a phase boundary within a long thread, if the scope clearly shifts.
+
+## Format rules
+
+- Use exactly one leading `#` and a space: `# Phase XX: ...`
+- `XX` is two digits (`01`, `02`, … `17`, `18`, …).
+- `[Short Phase Description]` is a concise title (3–8 words), title case optional.
+- Do not substitute `##`, bold, or alternate prefixes for the phase line.
+
+## Examples
+
+```text
+# Phase 18: Conversation Phase Standards
+# Phase 19: Enrollment Token UX
+```
+
+## Consistency
+
+- Do not reuse a phase number for unrelated work unless the user is resuming that phase.
+- If the inferred next phase conflicts with user intent, ask once; then follow the user's number.
+- Record the active phase in your own reasoning so later messages in the same chat stay aligned.

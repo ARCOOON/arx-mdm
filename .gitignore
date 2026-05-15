@@ -1,5 +1,6 @@
 # --- Go binaries and build artifacts ---
 bin/
+build/
 agent.exe
 arx-server
 arx-server.exe

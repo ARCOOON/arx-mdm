@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/ARCOOON/arx-mdm/internal/agent"
-	"github.com/ARCOOON/arx-mdm/internal/ws"
 	"github.com/ARCOOON/arx-mdm/pkg/system"
 
-	"golang.org/x/sync/errgroup"
+	_ "github.com/ARCOOON/arx-mdm/internal/ws" // registers agent C2 command loop with cmdloop
 )
 
 func main() {
@@ -137,11 +136,18 @@ func runEnroll(args []string, logger *slog.Logger) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	return agent.Enroll(ctx, logger, agent.EnrollOptions{
+	if err := agent.Enroll(ctx, logger, agent.EnrollOptions{
 		ServerURL: *server,
 		Token:     *token,
 		CertDir:   *certDir,
-	})
+	}); err != nil {
+		return err
+	}
+
+	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	logger.Info("enrollment complete; starting agent runtime")
+	return startAgentRuntime(runCtx, logger, *server, *certDir, 60*time.Second)
 }
 
 func runAgent(args []string, logger *slog.Logger) error {
@@ -165,20 +171,10 @@ func runAgent(args []string, logger *slog.Logger) error {
 }
 
 func startAgentRuntime(ctx context.Context, logger *slog.Logger, serverURL, certDir string, interval time.Duration) error {
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return ws.RunClient(ctx, ws.ClientOptions{
-			ServerURL: serverURL,
-			CertDir:   certDir,
-			Logger:    logger,
-		})
+	return agent.Run(ctx, agent.RunOptions{
+		ServerURL:         serverURL,
+		CertDir:           certDir,
+		Logger:            logger,
+		TelemetryInterval: interval,
 	})
-	g.Go(func() error {
-		return agent.RunHeartbeat(ctx, logger, agent.HeartbeatOptions{
-			ServerURL: serverURL,
-			CertDir:   certDir,
-			Interval:  interval,
-		})
-	})
-	return g.Wait()
 }

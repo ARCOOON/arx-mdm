@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/ARCOOON/arx-mdm/internal/agent"
-	"github.com/ARCOOON/arx-mdm/internal/ws"
 	"github.com/ARCOOON/arx-mdm/pkg/system"
 
-	"golang.org/x/sync/errgroup"
+	_ "github.com/ARCOOON/arx-mdm/internal/ws" // registers agent C2 command loop with cmdloop
+
 	"golang.org/x/sys/windows/svc"
 )
 
@@ -61,24 +61,15 @@ func (m *arxAgentService) Execute(args []string, r <-chan svc.ChangeRequest, cha
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return ws.RunClient(ctx, ws.ClientOptions{
-			ServerURL: *server,
-			CertDir:   *certDir,
-			Logger:    m.logger,
-		})
-	})
-	g.Go(func() error {
-		return agent.RunHeartbeat(ctx, m.logger, agent.HeartbeatOptions{
-			ServerURL: *server,
-			CertDir:   *certDir,
-			Interval:  *interval,
-		})
-	})
-
 	workDone := make(chan error, 1)
-	go func() { workDone <- g.Wait() }()
+	go func() {
+		workDone <- agent.Run(ctx, agent.RunOptions{
+			ServerURL:         *server,
+			CertDir:           *certDir,
+			Logger:            m.logger,
+			TelemetryInterval: *interval,
+		})
+	}()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 

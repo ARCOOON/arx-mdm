@@ -84,6 +84,8 @@ func NewWSGatewayHandler(d WSGatewayDeps) http.HandlerFunc {
 	up := websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
+		// Browser dashboard clients request Sec-WebSocket-Protocol: arx-dashboard; gorilla must echo it in 101.
+		Subprotocols: []string{"arx-dashboard"},
 		CheckOrigin: func(r *http.Request) bool {
 			if dashboardProtoRequested(r) {
 				return originAllowed(r, d.DashboardOrigins)
@@ -97,27 +99,36 @@ func NewWSGatewayHandler(d WSGatewayDeps) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if !d.MTLSRequired {
-			http.Error(w, "websocket requires server TLS and client CA bundle", http.StatusServiceUnavailable)
-			return
-		}
-		if r.TLS == nil {
-			http.Error(w, "tls required", http.StatusForbidden)
-			return
-		}
 
 		dashboardHandshake := dashboardProtoRequested(r)
+		if dashboardHandshake {
+			// Operator dashboard: JWT + Origin allowlist. TLS is required only when the server runs HTTPS/mTLS.
+			if d.MTLSRequired && r.TLS == nil {
+				http.Error(w, "tls required", http.StatusForbidden)
+				return
+			}
+		} else {
+			// Agent C2 always requires server TLS and a verified client certificate.
+			if !d.MTLSRequired {
+				http.Error(w, "websocket requires server TLS and client CA bundle", http.StatusServiceUnavailable)
+				return
+			}
+			if r.TLS == nil {
+				http.Error(w, "tls required", http.StatusForbidden)
+				return
+			}
+			if len(r.TLS.VerifiedChains) == 0 || len(r.TLS.PeerCertificates) == 0 {
+				http.Error(w, "mutual tls with a verified client certificate is required", http.StatusForbidden)
+				return
+			}
+		}
+
 		var dashPrincipal auth.Principal
 		if dashboardHandshake {
 			var err error
 			dashPrincipal, err = dashboardJWTPrincipal(r, d.DashboardJWT, d.DashboardOrigins)
 			if err != nil {
 				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-		} else {
-			if len(r.TLS.VerifiedChains) == 0 || len(r.TLS.PeerCertificates) == 0 {
-				http.Error(w, "mutual tls with a verified client certificate is required", http.StatusForbidden)
 				return
 			}
 		}

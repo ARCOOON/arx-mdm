@@ -13,8 +13,9 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 if ! command -v docker >/dev/null 2>&1; then
   apt-get update -y
-  apt-get install -y docker.io docker-compose-plugin
-  systemctl enable --now docker
+  apt-get install -y curl uidmap
+  curl -fsSL https://get.docker.com | sudo bash
+  dockerd-rootless-setuptool.sh install
 fi
 
 rand_b64() { openssl rand -base64 32 | tr -d '\n' | tr '/+' 'Aa'; }

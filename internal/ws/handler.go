@@ -207,6 +207,10 @@ func readPump(r *http.Request, s *agentSession, pool *pgxpool.Pool, dash *Dashbo
 
 		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 		_ = ApplyPackageDeploymentOutcome(ctx, pool, s.serial, data, logger)
+		if ApplyDeviceCommandOutcome(ctx, pool, dash, s.serial, data, logger) {
+			cancel()
+			continue
+		}
 		cancel()
 		if s.hub.TryDeliverFileTransfer(s.serial, data) {
 			continue

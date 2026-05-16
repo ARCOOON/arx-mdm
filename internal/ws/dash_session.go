@@ -146,7 +146,7 @@ func RunDashboardSession(r *http.Request, c *dashboardClient, pool *pgxpool.Pool
 				continue
 			}
 			replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: true, Message: "shutdown dispatched"})
-			auditDashboardDispatch(ctx, pool, logger, c.principal.UserID, "shutdown", target)
+			auditDashboardDispatch(r, ctx, pool, logger, c.principal.UserID, "shutdown", target)
 		case "registry_read", "registry_write", "registry_delete", "pty_start", "pty_data", "pty_resize", "pty_close", "deploy_package",
 			"fs_listdir", "fs_download", "fs_upload_begin", "fs_upload_chunk", "fs_upload_finish", "fs_upload_abort",
 			"net_list", "hostname_set":
@@ -168,14 +168,14 @@ func RunDashboardSession(r *http.Request, c *dashboardClient, pool *pgxpool.Pool
 				continue
 			}
 			replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: true, Message: action + " dispatched"})
-			auditDashboardDispatch(ctx, pool, logger, c.principal.UserID, action, target)
+			auditDashboardDispatch(r, ctx, pool, logger, c.principal.UserID, action, target)
 		default:
 			replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "unknown action"})
 		}
 	}
 }
 
-func auditDashboardDispatch(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger, userID uuid.UUID, transportAction, targetHuman string) {
+func auditDashboardDispatch(r *http.Request, ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger, userID uuid.UUID, transportAction, targetHuman string) {
 	if pool == nil || userID == uuid.Nil {
 		return
 	}
@@ -191,12 +191,23 @@ func auditDashboardDispatch(ctx context.Context, pool *pgxpool.Pool, logger *slo
 	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) && logger != nil {
 		logger.Debug("audit ws asset lookup failed", "err", err)
 	}
-	details := map[string]any{"target_arx_id": targetHuman, "channel": "dashboard_websocket"}
+	details := map[string]any{
+		"target_arx_id":    targetHuman,
+		"channel":          "dashboard_websocket",
+		"transport_action": transportAction,
+	}
 	actx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	logAction := "ws." + transportAction
-	if err := auth.InsertAuditLog(actx, pool, userID, logAction, assetID, details); err != nil && logger != nil {
-		logger.Warn("audit ws log insert failed", "err", err, "action", logAction)
+	if err := auth.InsertAuditRecord(actx, pool, auth.AuditRecord{
+		UserID:        userID,
+		Action:        "command_executed",
+		ResourceType:  "device",
+		ResourceID:    assetID,
+		TargetAssetID: assetID,
+		Details:       details,
+		IPAddress:     auth.ClientIP(r),
+	}); err != nil && logger != nil {
+		logger.Warn("audit ws log insert failed", "err", err, "action", "command_executed")
 	}
 }
 

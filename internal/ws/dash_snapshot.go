@@ -68,16 +68,16 @@ func assetWireFromDB(r assetRow, connectedSerial map[string]struct{}) AssetWire 
 
 	var meta struct {
 		Telemetry *struct {
-			OSFamily            *string                     `json:"os_family"`
-			OSVersion           *string                     `json:"os_version"`
-			CPUModel            *string                     `json:"cpu_model"`
-			CPULogicalCores     *int                        `json:"cpu_logical_cores"`
-			CPUUsagePercent     *float64                    `json:"cpu_usage_percent"`
-			TotalRAMBytes       *uint64                    `json:"total_ram_bytes"`
-			MemoryUsedBytes     *uint64                    `json:"memory_used_bytes"`
-			ReportedHostname    *string                     `json:"reported_hostname"`
-			ReportedAtRFC3339   *string                     `json:"reported_at_rfc3339"`
-			InstalledSoftware   []api.TelemetryInstalledApp `json:"installed_software"`
+			OSFamily          *string                     `json:"os_family"`
+			OSVersion         *string                     `json:"os_version"`
+			CPUModel          *string                     `json:"cpu_model"`
+			CPULogicalCores   *int                        `json:"cpu_logical_cores"`
+			CPUUsagePercent   *float64                    `json:"cpu_usage_percent"`
+			TotalRAMBytes     *uint64                     `json:"total_ram_bytes"`
+			MemoryUsedBytes   *uint64                     `json:"memory_used_bytes"`
+			ReportedHostname  *string                     `json:"reported_hostname"`
+			ReportedAtRFC3339 *string                     `json:"reported_at_rfc3339"`
+			InstalledSoftware []api.TelemetryInstalledApp `json:"installed_software"`
 		} `json:"telemetry"`
 	}
 	_ = json.Unmarshal(r.Metadata, &meta)

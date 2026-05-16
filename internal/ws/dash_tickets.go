@@ -16,7 +16,7 @@ func LoadTicketSnapshot(ctx context.Context, pool *pgxpool.Pool) ([]TicketWire, 
 	rows, err := pool.Query(ctx, `
 SELECT t.id, t.ticket_ref, t.title, t.status, t.priority, t.created_at, a.human_id
 FROM tickets t
-LEFT JOIN assets a ON a.id = t.asset_id
+LEFT JOIN assets a ON a.id = t.device_id
 ORDER BY t.created_at DESC
 LIMIT 500
 `)

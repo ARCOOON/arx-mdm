@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/ARCOOON/arx-mdm/internal/agent"
+	"github.com/ARCOOON/arx-mdm/internal/agent/c2"
 	"github.com/ARCOOON/arx-mdm/internal/agent/cmdloop"
 	"github.com/ARCOOON/arx-mdm/pkg/packagemanager"
 	"github.com/ARCOOON/arx-mdm/pkg/system"
@@ -124,16 +125,18 @@ func (rt *agentRuntime) handleDownlink(data []byte) error {
 		return rt.handleNetList(data)
 	case "hostname_set":
 		return rt.handleHostnameSet(data)
+	case "device_command":
+		return c2.HandleDownlink(context.Background(), rt.logger, func(v any) error { return rt.writeJSON(v) }, data)
 	default:
 		return nil
 	}
 }
 
 type registryReadCmd struct {
-	Action     string `json:"action"`
-	RequestID  string `json:"request_id"`
-	KeyPath    string `json:"key_path"`
-	ValueName  string `json:"value_name"`
+	Action    string `json:"action"`
+	RequestID string `json:"request_id"`
+	KeyPath   string `json:"key_path"`
+	ValueName string `json:"value_name"`
 }
 
 func (rt *agentRuntime) handleRegistryRead(data []byte) error {
@@ -144,22 +147,22 @@ func (rt *agentRuntime) handleRegistryRead(data []byte) error {
 	val, err := system.RegistryRead(cmd.KeyPath, cmd.ValueName)
 	if err != nil {
 		return rt.writeJSON(map[string]any{
-			"type":        agentMsgRegistryResult,
-			"request_id":  cmd.RequestID,
-			"ok":          false,
-			"error":       err.Error(),
-			"key_path":    cmd.KeyPath,
-			"value_name":  cmd.ValueName,
+			"type":       agentMsgRegistryResult,
+			"request_id": cmd.RequestID,
+			"ok":         false,
+			"error":      err.Error(),
+			"key_path":   cmd.KeyPath,
+			"value_name": cmd.ValueName,
 		})
 	}
 	return rt.writeJSON(map[string]any{
-		"type":        agentMsgRegistryResult,
-		"request_id":  cmd.RequestID,
-		"ok":          true,
-		"key_path":    cmd.KeyPath,
-		"value_name":  val.ValueName,
-		"value_type":  val.Type,
-		"data":        val.Data,
+		"type":       agentMsgRegistryResult,
+		"request_id": cmd.RequestID,
+		"ok":         true,
+		"key_path":   cmd.KeyPath,
+		"value_name": val.ValueName,
+		"value_type": val.Type,
+		"data":       val.Data,
 	})
 }
 
@@ -196,11 +199,11 @@ func (rt *agentRuntime) handleRegistryWrite(data []byte) error {
 }
 
 type registryDeleteCmd struct {
-	Action     string `json:"action"`
-	RequestID  string `json:"request_id"`
-	KeyPath    string `json:"key_path"`
-	ValueName  string `json:"value_name"`
-	DeleteKey  bool   `json:"delete_key"`
+	Action    string `json:"action"`
+	RequestID string `json:"request_id"`
+	KeyPath   string `json:"key_path"`
+	ValueName string `json:"value_name"`
+	DeleteKey bool   `json:"delete_key"`
 }
 
 func (rt *agentRuntime) handleRegistryDelete(data []byte) error {
@@ -271,9 +274,9 @@ func (rt *agentRuntime) ptyReadLoop(sess *system.PTYSession, requestID string) {
 		if n > 0 {
 			out := base64.StdEncoding.EncodeToString(buf[:n])
 			if werr := rt.writeJSON(map[string]any{
-				"type":        agentMsgPtyOutput,
+				"type":       agentMsgPtyOutput,
 				"request_id": requestID,
-				"data_b64":    out,
+				"data_b64":   out,
 			}); werr != nil {
 				rt.logger.Debug("pty uplink write failed", "err", werr)
 				return
@@ -291,8 +294,8 @@ func (rt *agentRuntime) ptyReadLoop(sess *system.PTYSession, requestID string) {
 }
 
 type ptyDataCmd struct {
-	Action   string `json:"action"`
-	DataB64  string `json:"data_b64"`
+	Action  string `json:"action"`
+	DataB64 string `json:"data_b64"`
 }
 
 func (rt *agentRuntime) handlePTYData(data []byte) error {
@@ -345,14 +348,14 @@ func (rt *agentRuntime) handlePTYClose() error {
 }
 
 type deployPackageCmd struct {
-	Action         string `json:"action"`
-	DeploymentID   string `json:"deployment_id"`
-	RequestID      string `json:"request_id"`
-	Operation      string `json:"operation"`
-	PackageType    string `json:"package_type"`
-	Name           string `json:"name"`
-	Version        string `json:"version"`
-	InstallCmd     string `json:"install_cmd"`
+	Action       string `json:"action"`
+	DeploymentID string `json:"deployment_id"`
+	RequestID    string `json:"request_id"`
+	Operation    string `json:"operation"`
+	PackageType  string `json:"package_type"`
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	InstallCmd   string `json:"install_cmd"`
 }
 
 func (rt *agentRuntime) handleDeployPackage(data []byte) error {
@@ -385,12 +388,12 @@ func (rt *agentRuntime) runDeployPackage(cmd deployPackageCmd, op string) {
 		errStr = err.Error()
 	}
 	_ = rt.writeJSON(map[string]any{
-		"type":            agentMsgPackageResult,
-		"deployment_id":   strings.TrimSpace(cmd.DeploymentID),
-		"request_id":      strings.TrimSpace(cmd.RequestID),
-		"ok":              ok,
-		"error":           errStr,
-		"operation":       op,
-		"package_type":    cmd.PackageType,
+		"type":          agentMsgPackageResult,
+		"deployment_id": strings.TrimSpace(cmd.DeploymentID),
+		"request_id":    strings.TrimSpace(cmd.RequestID),
+		"ok":            ok,
+		"error":         errStr,
+		"operation":     op,
+		"package_type":  cmd.PackageType,
 	})
 }

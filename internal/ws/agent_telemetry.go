@@ -40,11 +40,8 @@ func tryHandleAgentTelemetry(ctx context.Context, certSerial string, data []byte
 	}
 
 	var wire struct {
-		Type               string  `json:"type"`
-		UptimeSeconds      uint64  `json:"uptime_seconds,omitempty"`
-		RootDiskTotalBytes uint64  `json:"root_disk_total_bytes,omitempty"`
-		RootDiskFreeBytes  uint64  `json:"root_disk_free_bytes,omitempty"`
-		RootDiskUsedBytes  uint64  `json:"root_disk_used_bytes,omitempty"`
+		Type          string `json:"type"`
+		UptimeSeconds uint64 `json:"uptime_seconds,omitempty"`
 		api.TelemetryPayload
 	}
 	if err := json.Unmarshal(data, &wire); err != nil {

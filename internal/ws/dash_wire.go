@@ -21,18 +21,18 @@ const (
 
 // AssetWire is a compact asset row for the operator dashboard.
 type AssetWire struct {
-	ID                string                     `json:"id,omitempty"`
-	HumanID           string                     `json:"human_id"`
-	Hostname          string                     `json:"hostname"`
-	OsType            string                     `json:"os_type,omitempty"`
-	OS                string                     `json:"os"`
-	CPUModel          string                     `json:"cpu_model"`
-	CPULogicalCores   int                        `json:"cpu_logical_cores"`
-	CPUUsagePercent   float64                    `json:"cpu_usage_percent"`
-	TotalRAMBytes     uint64                     `json:"total_ram_bytes"`
-	MemoryUsedBytes   uint64                     `json:"memory_used_bytes"`
-	LastSeenRFC3339   string                     `json:"last_seen,omitempty"`
-	C2Connected       bool                       `json:"c2_connected"`
+	ID                string                      `json:"id,omitempty"`
+	HumanID           string                      `json:"human_id"`
+	Hostname          string                      `json:"hostname"`
+	OsType            string                      `json:"os_type,omitempty"`
+	OS                string                      `json:"os"`
+	CPUModel          string                      `json:"cpu_model"`
+	CPULogicalCores   int                         `json:"cpu_logical_cores"`
+	CPUUsagePercent   float64                     `json:"cpu_usage_percent"`
+	TotalRAMBytes     uint64                      `json:"total_ram_bytes"`
+	MemoryUsedBytes   uint64                      `json:"memory_used_bytes"`
+	LastSeenRFC3339   string                      `json:"last_seen,omitempty"`
+	C2Connected       bool                        `json:"c2_connected"`
 	InstalledSoftware []api.TelemetryInstalledApp `json:"installed_software"`
 }
 

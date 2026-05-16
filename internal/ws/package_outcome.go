@@ -13,13 +13,13 @@ import (
 const agentMsgPackageResult = "package_result"
 
 type agentPackageResult struct {
-	Type           string `json:"type"`
-	DeploymentID   string `json:"deployment_id"`
-	RequestID      string `json:"request_id"`
-	OK             bool   `json:"ok"`
-	Error          string `json:"error"`
-	Operation      string `json:"operation"`
-	PackageType    string `json:"package_type"`
+	Type         string `json:"type"`
+	DeploymentID string `json:"deployment_id"`
+	RequestID    string `json:"request_id"`
+	OK           bool   `json:"ok"`
+	Error        string `json:"error"`
+	Operation    string `json:"operation"`
+	PackageType  string `json:"package_type"`
 }
 
 // ApplyPackageDeploymentOutcome updates deployments when an agent reports completion.

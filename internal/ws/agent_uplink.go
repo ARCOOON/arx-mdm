@@ -22,7 +22,7 @@ func tryBroadcastAgentUplink(ctx context.Context, pool *pgxpool.Pool, dash *Dash
 	}
 	switch strings.TrimSpace(probe.Type) {
 	case agentMsgRegistryResult, agentMsgPtyOutput, agentMsgPtyExit, MsgTypePtyStarted, agentMsgPackageResult,
-		agentMsgFsListDirResult, agentMsgNetListResult, agentMsgHostnameSetResult:
+		agentMsgFsListDirResult, agentMsgNetListResult, agentMsgHostnameSetResult, agentMsgDeviceCommandResult:
 	default:
 		return false
 	}

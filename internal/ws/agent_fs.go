@@ -61,9 +61,9 @@ func (rt *agentRuntime) handleNetList(data []byte) error {
 		})
 	}
 	return rt.writeJSON(map[string]any{
-		"type":        agentMsgNetListResult,
-		"request_id":  strings.TrimSpace(cmd.RequestID),
-		"ok":          true,
+		"type":       agentMsgNetListResult,
+		"request_id": strings.TrimSpace(cmd.RequestID),
+		"ok":         true,
 		"interfaces": ifs,
 	})
 }
@@ -94,10 +94,10 @@ func (rt *agentRuntime) handleHostnameSet(data []byte) error {
 }
 
 type fsDownloadCmd struct {
-	Action     string `json:"action"`
-	RequestID  string `json:"request_id"`
-	Path       string `json:"path"`
-	ChunkSize  int    `json:"chunk_size"`
+	Action    string `json:"action"`
+	RequestID string `json:"request_id"`
+	Path      string `json:"path"`
+	ChunkSize int    `json:"chunk_size"`
 }
 
 func (rt *agentRuntime) handleFsDownload(data []byte) error {

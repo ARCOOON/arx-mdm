@@ -34,6 +34,13 @@ type RunOptions struct {
 	CertDir           string
 	Logger            *slog.Logger
 	TelemetryInterval time.Duration
+	// TelemetryKick, when non-nil, triggers an immediate telemetry send in addition to the ticker.
+	TelemetryKick <-chan struct{}
+	// Optional observers for UI or bindings (e.g. Android). Nil funcs are ignored.
+	OnConnecting    func()
+	OnConnected     func()
+	OnDisconnected  func()
+	OnTelemetrySent func()
 }
 
 // Run maintains a mutual-TLS WebSocket to /v1/ws, sends telemetry every TelemetryInterval,
@@ -78,6 +85,10 @@ func Run(ctx context.Context, opts RunOptions) error {
 			return ctx.Err()
 		}
 
+		if opts.OnConnecting != nil {
+			opts.OnConnecting()
+		}
+
 		header := http.Header{}
 		header.Set("User-Agent", "arx-mdm-agent-c2")
 
@@ -101,13 +112,23 @@ func Run(ctx context.Context, opts RunOptions) error {
 		}
 		backoff = wsInitialBackoff
 		opts.Logger.Info("websocket connected", "url", wsURL)
+		if opts.OnConnected != nil {
+			opts.OnConnected()
+		}
+
+		installBridge := &InstallBridge{
+			ServerURL: server,
+			CertDir:   certDir,
+		}
+		SetInstallBridge(installBridge)
+		defer SetInstallBridge(nil)
 
 		sessCtx, sessCancel := context.WithCancel(ctx)
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			runTelemetryLoop(sessCtx, opts.Logger, conn, interval)
+			runTelemetryLoop(sessCtx, opts.Logger, conn, interval, opts.TelemetryKick, opts.OnTelemetrySent)
 		}()
 
 		readErr := cmdloop.Run(sessCtx, opts.Logger, conn)
@@ -124,6 +145,9 @@ func Run(ctx context.Context, opts RunOptions) error {
 		if readErr != nil {
 			opts.Logger.Warn("websocket session ended", "err", readErr)
 		}
+		if opts.OnDisconnected != nil {
+			opts.OnDisconnected()
+		}
 
 		select {
 		case <-ctx.Done():
@@ -137,7 +161,7 @@ func Run(ctx context.Context, opts RunOptions) error {
 	}
 }
 
-func runTelemetryLoop(ctx context.Context, logger *slog.Logger, conn *websocket.Conn, interval time.Duration) {
+func runTelemetryLoop(ctx context.Context, logger *slog.Logger, conn *websocket.Conn, interval time.Duration, kick <-chan struct{}, onSent func()) {
 	send := func() {
 		msg, err := buildTelemetryWireMessage()
 		if err != nil {
@@ -151,16 +175,31 @@ func runTelemetryLoop(ctx context.Context, logger *slog.Logger, conn *websocket.
 			return
 		}
 		logger.Debug("telemetry sent over websocket")
+		if onSent != nil {
+			onSent()
+		}
 	}
 
 	send()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	if kick == nil {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				send()
+			}
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			send()
+		case <-kick:
 			send()
 		}
 	}

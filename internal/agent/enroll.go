@@ -147,6 +147,10 @@ func joinEnrollURL(serverBase string) (string, error) {
 	return u.String(), nil
 }
 
+// EnvEnrollInsecureTLS is honored only by enrollment HTTP bootstrap (HTTPS against a freshly minted
+// PKI CA). Agents should never set this outside controlled lab or automated tests.
+const EnvEnrollInsecureTLS = "ARX_AGENT_ENROLL_INSECURE_TLS"
+
 func newPlainHTTPClient(requestURL string) *http.Client {
 	u, err := url.Parse(requestURL)
 	if err != nil {
@@ -154,7 +158,11 @@ func newPlainHTTPClient(requestURL string) *http.Client {
 	}
 	tr := &http.Transport{Proxy: http.ProxyFromEnvironment}
 	if u.Scheme == "https" {
-		tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+		cfg := &tls.Config{MinVersion: tls.VersionTLS12}
+		if strings.TrimSpace(os.Getenv(EnvEnrollInsecureTLS)) == "1" {
+			cfg.InsecureSkipVerify = true
+		}
+		tr.TLSClientConfig = cfg
 	}
 	return &http.Client{Transport: tr, Timeout: 120 * time.Second}
 }

@@ -132,147 +132,147 @@ export function DeviceMetricsCharts({
         <p className="text-[12px] text-slate-500">Loading metrics…</p>
       ) : null}
 
-      {!loading && chartRows.length === 0 ? (
-        <p className="text-[12px] text-slate-500">
-          No metric history in this window. Samples appear after the agent sends
-          telemetry.
-        </p>
-      ) : null}
-
-      {chartRows.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-            <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
-              CPU usage (%)
-            </div>
-            <div className="h-[220px] w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartRows}
-                  margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="t"
-                    tick={{ fill: axisColor, fontSize: 10 }}
-                    tickFormatter={formatChartTime}
-                    minTickGap={24}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fill: axisColor, fontSize: 10 }}
-                    width={32}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor:
-                        theme === 'dark' ? '#0f172a' : '#f8fafc',
-                      border: `1px solid ${gridColor}`,
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
-                    labelFormatter={formatChartTime}
-                    formatter={(value: number | string) => [
-                      typeof value === 'number' ? `${value.toFixed(1)}%` : value,
-                      'CPU',
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cpu_usage"
-                    stroke={cpuStroke}
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-            <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
-              RAM used (%)
-            </div>
-            <div className="h-[220px] w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartRows}
-                  margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="t"
-                    tick={{ fill: axisColor, fontSize: 10 }}
-                    tickFormatter={formatChartTime}
-                    minTickGap={24}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fill: axisColor, fontSize: 10 }}
-                    width={32}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor:
-                        theme === 'dark' ? '#0f172a' : '#f8fafc',
-                      border: `1px solid ${gridColor}`,
-                      borderRadius: 6,
-                      fontSize: 12,
-                    }}
-                    labelFormatter={formatChartTime}
-                    formatter={(value: number | string) => [
-                      typeof value === 'number' ? `${value.toFixed(1)}%` : value,
-                      'RAM',
-                    ]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="ram_used_percent"
-                    stroke={ramStroke}
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40">
-        <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
-          Root disk (latest sample)
-        </div>
-        {data?.disk && data.disk.total_bytes > 0 && diskPct !== null ? (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {chartRows.length > 0 ? (
           <>
-            <div className="mb-1 flex justify-between text-[11px] text-slate-600 dark:text-slate-400">
-              <span>
-                {formatBytesPair(data.disk.used_bytes, data.disk.total_bytes)}
-              </span>
-              <span className="tabular-nums">{diskPct}%</span>
+            <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+              <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
+                CPU usage (%)
+              </div>
+              <div className="h-[220px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartRows}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="t"
+                      tick={{ fill: axisColor, fontSize: 10 }}
+                      tickFormatter={formatChartTime}
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: axisColor, fontSize: 10 }}
+                      width={32}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor:
+                          theme === 'dark' ? '#0f172a' : '#f8fafc',
+                        border: `1px solid ${gridColor}`,
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                      labelFormatter={formatChartTime}
+                      formatter={(value: number | string) => [
+                        typeof value === 'number' ? `${value.toFixed(1)}%` : value,
+                        'CPU',
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="cpu_usage"
+                      stroke={cpuStroke}
+                      strokeWidth={2}
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div
-              className="h-2.5 w-full overflow-hidden rounded-full"
-              style={{ backgroundColor: diskTrack }}
-              title={`Sampled at ${data.disk.sampled_at}`}
-            >
-              <div
-                className="h-full rounded-full transition-[width]"
-                style={{
-                  width: `${diskPct}%`,
-                  backgroundColor: diskFill,
-                }}
-              />
+
+            <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+              <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
+                RAM used (%)
+              </div>
+              <div className="h-[220px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartRows}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="t"
+                      tick={{ fill: axisColor, fontSize: 10 }}
+                      tickFormatter={formatChartTime}
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: axisColor, fontSize: 10 }}
+                      width={32}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor:
+                          theme === 'dark' ? '#0f172a' : '#f8fafc',
+                        border: `1px solid ${gridColor}`,
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                      labelFormatter={formatChartTime}
+                      formatter={(value: number | string) => [
+                        typeof value === 'number' ? `${value.toFixed(1)}%` : value,
+                        'RAM',
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="ram_used_percent"
+                      stroke={ramStroke}
+                      strokeWidth={2}
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </>
-        ) : (
-          <p className="text-[12px] text-slate-500">
-            No disk samples in this window. Agents report disk totals over C2 or
-            HTTP telemetry.
-          </p>
-        )}
+        ) : !loading ? (
+          <div className="rounded border border-dashed border-slate-300 bg-slate-100/50 p-4 text-[12px] text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 md:col-span-2 lg:col-span-2">
+            No metric history in this window. Samples appear after the agent sends
+            telemetry.
+          </div>
+        ) : null}
+
+        <div className="rounded border border-slate-200 bg-slate-100/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 md:col-span-2 lg:col-span-1">
+          <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
+            Root disk (latest sample)
+          </div>
+          {data?.disk && data.disk.total_bytes > 0 && diskPct !== null ? (
+            <>
+              <div className="mb-1 flex justify-between text-[11px] text-slate-600 dark:text-slate-400">
+                <span>
+                  {formatBytesPair(data.disk.used_bytes, data.disk.total_bytes)}
+                </span>
+                <span className="tabular-nums">{diskPct}%</span>
+              </div>
+              <div
+                className="h-2.5 w-full overflow-hidden rounded-full"
+                style={{ backgroundColor: diskTrack }}
+                title={`Sampled at ${data.disk.sampled_at}`}
+              >
+                <div
+                  className="h-full rounded-full transition-[width]"
+                  style={{
+                    width: `${diskPct}%`,
+                    backgroundColor: diskFill,
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-[12px] text-slate-500">
+              No disk samples in this window. Agents report disk totals over C2 or
+              HTTP telemetry.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

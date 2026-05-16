@@ -25,6 +25,7 @@ type AuthContextValue = {
   refreshUser: () => Promise<void>
   isAdmin: boolean
   canOperate: boolean
+  isViewer: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser,
       isAdmin: user?.role === 'admin',
       canOperate: user?.role === 'admin' || user?.role === 'operator',
+      isViewer: user?.role === 'viewer',
     }),
     [token, user, loading, error, login, logout, refreshUser],
   )

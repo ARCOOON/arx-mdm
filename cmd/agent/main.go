@@ -118,7 +118,7 @@ func parseInstallOptions(args []string) (system.WindowsAgentInstallOptions, erro
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s enroll -server <url> -token <secret> [-certdir <path>]\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s enroll -server <url> -token <secret> [-certdir <path>] [-interval <duration>]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s run -server <url> [-certdir <path>] [-interval <duration>]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "    (run starts telemetry heartbeat and a persistent C2 WebSocket to /v1/ws)\n")
 	fmt.Fprintf(os.Stderr, "  %s -install -server <url> [-certdir <path>] [-interval <duration>]   (Windows SCM; Administrator)\n", os.Args[0])
@@ -130,6 +130,7 @@ func runEnroll(args []string, logger *slog.Logger) error {
 	server := fs.String("server", "", "MDM server base URL")
 	token := fs.String("token", "", "enrollment presentation secret")
 	certDir := fs.String("certdir", agent.DefaultCertDir(), "directory for client.key, client.crt, root_ca.pem")
+	interval := fs.Duration("interval", 60*time.Second, "telemetry interval after enrollment")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("parse flags: %w", err)
 	}
@@ -152,7 +153,7 @@ func runEnroll(args []string, logger *slog.Logger) error {
 	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	logger.Info("enrollment complete; starting agent runtime")
-	return startAgentRuntime(runCtx, logger, *server, *certDir, 60*time.Second)
+	return startAgentRuntime(runCtx, logger, *server, *certDir, *interval)
 }
 
 func runAgent(args []string, logger *slog.Logger) error {

@@ -217,7 +217,7 @@ func runServe(logger *slog.Logger) error {
 				"title":      title,
 			}
 			if linkedAssetID != nil {
-				details["asset_id"] = linkedAssetID.String()
+				details["device_id"] = linkedAssetID.String()
 				var hid string
 				if err := pool.QueryRow(ctx, `SELECT human_id FROM assets WHERE id = $1`, *linkedAssetID).Scan(&hid); err == nil && strings.TrimSpace(hid) != "" {
 					details["linked_human_id"] = hid
@@ -237,6 +237,27 @@ func runServe(logger *slog.Logger) error {
 		Logger: logger,
 		Auth:   dashAuth,
 		C2Hub:  c2Hub,
+	})
+
+	api.RegisterDeviceCommandRoutes(mux, api.DeviceCommandsDeps{
+		Pool:     pool,
+		Logger:   logger,
+		Auth:     dashAuth,
+		Dispatch: c2Hub.DispatchJSON,
+		ResolveAsset: func(ctx context.Context, deviceID uuid.UUID) (string, error) {
+			return api.ResolveAssetCertSerial(ctx, pool, deviceID)
+		},
+	})
+	api.RegisterDeviceMetricsRoutes(mux, api.DeviceMetricsDeps{
+		Pool:   pool,
+		Logger: logger,
+		Auth:   dashAuth,
+	})
+
+	api.RegisterDeviceAssignmentRoutes(mux, api.DeviceAssignmentsDeps{
+		Pool:   pool,
+		Logger: logger,
+		Auth:   dashAuth,
 	})
 
 	api.NewFilesHandler(mux, api.FilesDeps{
@@ -282,7 +303,9 @@ func runServe(logger *slog.Logger) error {
 
 	serverinstall.Register(mux, logger)
 
-	auditWrapped := auth.MutatingAuditMiddleware(pool, logger, jwtSvc, dashboardOrigins)(mux)
+	h := auth.MutatingAuditMiddleware(pool, logger, jwtSvc, dashboardOrigins)(mux)
+	h = auth.DashboardRBACMiddleware(jwtSvc, dashboardOrigins)(h)
+	auditWrapped := h
 
 	srv := &http.Server{
 		Addr:              listenAddr,

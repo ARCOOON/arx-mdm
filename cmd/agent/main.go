@@ -20,6 +20,11 @@ import (
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
+	if len(os.Args) >= 2 && os.Args[1] == "enterprise-wipe-worker" {
+		agent.RunEnterpriseWipeWorker(logger)
+		os.Exit(0)
+	}
+
 	handled, err := tryRunWindowsAgentService(logger)
 	if err != nil {
 		if handled {

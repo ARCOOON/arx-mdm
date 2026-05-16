@@ -82,6 +82,8 @@ func dashboardRBACPublic(method, path string) bool {
 		return true
 	case method == http.MethodGet && path == "/v1/ws":
 		return true
+	case method == http.MethodGet && strings.HasPrefix(path, "/v1/agent/"):
+		return true
 	default:
 		return false
 	}

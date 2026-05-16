@@ -384,7 +384,14 @@ func (s *Scheduler) auditDispatch(ctx context.Context, row automationRow, humanI
 	if err == nil {
 		assetID = &id
 	}
-	if err := auth.InsertAuditLog(actx, s.deps.Pool, uuid.Nil, action, assetID, details); err != nil && s.deps.Logger != nil {
+	if err := auth.InsertAuditRecord(actx, s.deps.Pool, auth.AuditRecord{
+		UserID:        uuid.Nil,
+		Action:        action,
+		ResourceType:  "device",
+		ResourceID:    assetID,
+		TargetAssetID: assetID,
+		Details:       details,
+	}); err != nil && s.deps.Logger != nil {
 		s.deps.Logger.Warn("scheduler audit log failed", "err", err, "action", action)
 	}
 }

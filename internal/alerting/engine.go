@@ -34,14 +34,23 @@ type Engine struct {
 	dispatcher *notifications.Dispatcher
 
 	tickEvery time.Duration
+
+	incidentHooks IncidentAutomationHooks
+}
+
+// IncidentAutomationHooks connects the alert evaluator to automated incident workflows.
+type IncidentAutomationHooks interface {
+	OnCriticalDeviceFingerprint(ctx context.Context, fingerprint, severity string, deviceID uuid.UUID, title, message string)
+	OnAlertFingerprintsResolved(ctx context.Context, fingerprints []string)
 }
 
 // Dependencies wires alerting runtime requirements.
 type Dependencies struct {
-	Pool         *pgxpool.Pool
-	Logger       *slog.Logger
-	Dispatcher   *notifications.Dispatcher
-	TickInterval time.Duration
+	Pool          *pgxpool.Pool
+	Logger        *slog.Logger
+	Dispatcher    *notifications.Dispatcher
+	TickInterval  time.Duration
+	IncidentHooks IncidentAutomationHooks
 }
 
 // NewEngine builds the alerting evaluator.
@@ -51,10 +60,11 @@ func NewEngine(d Dependencies) *Engine {
 		tick = defaultEngineTick
 	}
 	return &Engine{
-		pool:       d.Pool,
-		log:        d.Logger,
-		dispatcher: d.Dispatcher,
-		tickEvery:  tick,
+		pool:          d.Pool,
+		log:           d.Logger,
+		dispatcher:    d.Dispatcher,
+		tickEvery:     tick,
+		incidentHooks: d.IncidentHooks,
 	}
 }
 
@@ -80,11 +90,25 @@ func (e *Engine) OnHeartbeat(parent context.Context, deviceID uuid.UUID) {
 	if e == nil || e.pool == nil || deviceID == uuid.Nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
+	ctx, cancel := context.WithTimeout(parent, 12*time.Second)
 	defer cancel()
-	if err := database.ResolveActiveAlertsKindsForDevice(ctx, e.pool, deviceID); err != nil && e.log != nil {
+	fps, err := database.ResolveActiveAlertsKindsForDeviceReturning(ctx, e.pool, deviceID)
+	if err != nil && e.log != nil {
 		e.log.Warn("alerting: resolve offline alerts failed", "device_id", deviceID.String(), "err", err)
 	}
+	if len(fps) == 0 || e.incidentHooks == nil {
+		return
+	}
+	go func(bg context.Context, prints []string) {
+		bg, gc := context.WithTimeout(bg, 25*time.Second)
+		defer gc()
+		defer func() {
+			if rec := recover(); rec != nil && e.log != nil {
+				e.log.Error("incident hooks panicked after heartbeat", "recover", rec)
+			}
+		}()
+		e.incidentHooks.OnAlertFingerprintsResolved(bg, prints)
+	}(parent, dedupeFingerprints(fps))
 }
 
 func (e *Engine) evaluate(parent context.Context) {
@@ -133,9 +157,10 @@ func (e *Engine) evaluateBuiltinOffline(ctx context.Context) error {
 		}
 
 		dev := asset.ID
+		sev := "critical"
 		outcome, err := database.UpsertUnresolvedAlert(ctx, e.pool,
 			fp, database.AlertKindBuiltinOffline, &dev, nil,
-			"critical",
+			sev,
 			title, body,
 			map[string]any{
 				"asset_id":     asset.ID.String(),
@@ -160,8 +185,14 @@ func (e *Engine) evaluateBuiltinOffline(ctx context.Context) error {
 				},
 			})
 		}
+		e.maybeOpenIncidentForCritical(fp, sev, dev, title, body)
 	}
-	return database.CloseAlertsKindsExcept(ctx, e.pool, database.AlertKindBuiltinOffline, desired)
+	fpsResolved, ferr := database.CloseAlertsKindsExceptReturning(ctx, e.pool, database.AlertKindBuiltinOffline, desired)
+	if ferr != nil {
+		return ferr
+	}
+	submitResolvedFingerprints(e, ctx, fpsResolved)
+	return nil
 }
 
 func (e *Engine) evaluateDeviceRules(ctx context.Context) error {
@@ -191,10 +222,16 @@ func (e *Engine) evaluateDeviceRules(ctx context.Context) error {
 		}
 	}
 
-	if err := database.CloseAlertsKindsExcept(ctx, e.pool, database.AlertKindRuleOffline, desiredOffline); err != nil {
-		return err
+	fpsOffline, ferr := database.CloseAlertsKindsExceptReturning(ctx, e.pool, database.AlertKindRuleOffline, desiredOffline)
+	if ferr != nil {
+		return ferr
 	}
-	return database.CloseAlertsKindsExcept(ctx, e.pool, database.AlertKindRuleMetric, desiredMetric)
+	fpsMetric, merr := database.CloseAlertsKindsExceptReturning(ctx, e.pool, database.AlertKindRuleMetric, desiredMetric)
+	if merr != nil {
+		return merr
+	}
+	submitResolvedFingerprints(e, ctx, dedupeFingerprints(append(fpsOffline, fpsMetric...)))
+	return nil
 }
 
 func (e *Engine) handleOfflineRule(
@@ -233,9 +270,10 @@ func (e *Engine) handleOfflineRule(
 
 		ruleIDCopy := rule.ID
 		device := assetID
+		sev := strings.TrimSpace(rule.Severity)
 		outcome, err := database.UpsertUnresolvedAlert(ctx, e.pool,
 			fp, database.AlertKindRuleOffline, &device, &ruleIDCopy,
-			strings.TrimSpace(rule.Severity), title, message,
+			sev, title, message,
 			map[string]any{"rule_id": rule.ID.String(), "asset_id": assetID.String(), "offline_seconds": sec},
 			notifyDedupCooldown,
 		)
@@ -248,7 +286,7 @@ func (e *Engine) handleOfflineRule(
 		if outcome.ShouldNotify {
 			e.dispatcher.Notify(notifications.AlertEvent{
 				Type:     notifications.EventRuleOffline,
-				Severity: strings.TrimSpace(rule.Severity),
+				Severity: sev,
 				Title:    title,
 				Message:  message,
 				Details: map[string]any{
@@ -257,6 +295,7 @@ func (e *Engine) handleOfflineRule(
 				},
 			})
 		}
+		e.maybeOpenIncidentForCritical(fp, sev, device, title, message)
 	}
 }
 
@@ -299,9 +338,10 @@ func (e *Engine) handleTelemetryRule(
 
 		ruleIDCopy := rule.ID
 		device := assetID
+		sev := strings.TrimSpace(rule.Severity)
 		outcome, err := database.UpsertUnresolvedAlert(ctx, e.pool,
 			fp, database.AlertKindRuleMetric, &device, &ruleIDCopy,
-			strings.TrimSpace(rule.Severity), title, message,
+			sev, title, message,
 			map[string]any{
 				"rule_id":   rule.ID.String(),
 				"asset_id":  assetID.String(),
@@ -322,7 +362,7 @@ func (e *Engine) handleTelemetryRule(
 		if outcome.ShouldNotify {
 			e.dispatcher.Notify(notifications.AlertEvent{
 				Type:     notifications.EventRuleMetric,
-				Severity: strings.TrimSpace(rule.Severity),
+				Severity: sev,
 				Title:    title,
 				Message:  message,
 				Details: map[string]any{
@@ -332,6 +372,7 @@ func (e *Engine) handleTelemetryRule(
 				},
 			})
 		}
+		e.maybeOpenIncidentForCritical(fp, sev, device, title, message)
 	}
 }
 
@@ -369,4 +410,63 @@ func compareFloat(operator string, value, threshold float64) bool {
 
 func almostEqual(a, b float64) bool {
 	return math.Abs(a-b) <= 1e-6
+}
+
+func dedupeFingerprints(in []string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	set := map[string]struct{}{}
+	out := make([]string, 0, len(in))
+	for _, fp := range in {
+		fp = strings.TrimSpace(fp)
+		if fp == "" {
+			continue
+		}
+		if _, ok := set[fp]; ok {
+			continue
+		}
+		set[fp] = struct{}{}
+		out = append(out, fp)
+	}
+	return out
+}
+
+func submitResolvedFingerprints(e *Engine, parent context.Context, fps []string) {
+	if e == nil || len(fps) == 0 || e.incidentHooks == nil {
+		return
+	}
+	go func(bg context.Context, prints []string) {
+		bg, gc := context.WithTimeout(bg, 25*time.Second)
+		defer gc()
+		defer func() {
+			if rec := recover(); rec != nil && e.log != nil {
+				e.log.Error("incident hooks panicked after alert closures", "recover", rec)
+			}
+		}()
+		e.incidentHooks.OnAlertFingerprintsResolved(bg, prints)
+	}(parent, dedupeFingerprints(fps))
+}
+
+func (e *Engine) maybeOpenIncidentForCritical(fp, severity string, deviceID uuid.UUID, title, msg string) {
+	if e == nil || e.incidentHooks == nil {
+		return
+	}
+	sev := strings.TrimSpace(strings.ToLower(severity))
+	if sev != "critical" {
+		return
+	}
+	fp = strings.TrimSpace(fp)
+	title = strings.TrimSpace(title)
+	msg = strings.TrimSpace(msg)
+	go func(bg context.Context, fprint string, asset uuid.UUID) {
+		bg, gc := context.WithTimeout(bg, 20*time.Second)
+		defer gc()
+		defer func() {
+			if rec := recover(); rec != nil && e.log != nil {
+				e.log.Error("incident open hook panicked", "recover", rec)
+			}
+		}()
+		e.incidentHooks.OnCriticalDeviceFingerprint(bg, fprint, "critical", asset, title, msg)
+	}(context.Background(), fp, deviceID)
 }

@@ -16,19 +16,19 @@ import (
 
 // Snapshot is a platform-neutral telemetry sample (Windows and Linux).
 type Snapshot struct {
-	Hostname            string
-	OSFamily            string
-	OSVersion           string
-	UptimeSeconds       uint64
-	TotalRAMBytes       uint64
-	UsedRAMBytes        uint64
-	FreeRAMBytes        uint64
-	CPUUsagePercent     float64
-	RootDiskTotalBytes  uint64
-	RootDiskUsedBytes   uint64
-	RootDiskFreeBytes   uint64
-	CPULogicalCores     int
-	CPUModel            string
+	Hostname           string
+	OSFamily           string
+	OSVersion          string
+	UptimeSeconds      uint64
+	TotalRAMBytes      uint64
+	UsedRAMBytes       uint64
+	FreeRAMBytes       uint64
+	CPUUsagePercent    float64
+	RootDiskTotalBytes uint64
+	RootDiskUsedBytes  uint64
+	RootDiskFreeBytes  uint64
+	CPULogicalCores    int
+	CPUModel           string
 }
 
 // Collect gathers CPU, memory, root disk, OS version, and uptime using gopsutil.

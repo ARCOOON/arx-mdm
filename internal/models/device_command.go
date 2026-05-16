@@ -8,9 +8,11 @@ import (
 
 // Device command types and lifecycle statuses (device_commands table).
 const (
-	DeviceCommandTypePing   = "ping"
-	DeviceCommandTypeReboot = "reboot"
-	DeviceCommandTypeScript = "script"
+	DeviceCommandTypePing            = "ping"
+	DeviceCommandTypeReboot          = "reboot"
+	DeviceCommandTypeScript          = "script"
+	DeviceCommandTypeRestartService  = "restart_service"
+	DeviceCommandTypePushConfig      = "push_config"
 
 	DeviceCommandStatusPending   = "pending"
 	DeviceCommandStatusSent      = "sent"

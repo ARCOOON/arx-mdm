@@ -20,25 +20,12 @@ type Asset struct {
 	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 }
 
-// Ticket is a work item using the required ticket reference prefixes (INC-, REQ-, CHG-, PRJ-).
-type Ticket struct {
-	ID          uuid.UUID  `json:"id" db:"id"`
-	TicketRef   string     `json:"ticket_ref" db:"ticket_ref"`
-	Title       string     `json:"title" db:"title"`
-	Description string     `json:"description,omitempty" db:"description"`
-	Status      string     `json:"status" db:"status"`
-	Priority    string     `json:"priority" db:"priority"`
-	DeviceID    *uuid.UUID `json:"device_id,omitempty" db:"device_id"`
-	CreatedBy   *uuid.UUID `json:"created_by,omitempty" db:"created_by"`
-	AssignedTo  *uuid.UUID `json:"assigned_to,omitempty" db:"assigned_to"`
-	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
-}
 
-// Resolution records how a ticket was closed or superseded.
+
+// Resolution records how an incident was closed or superseded.
 type Resolution struct {
 	ID         uuid.UUID `json:"id" db:"id"`
-	TicketID   uuid.UUID `json:"ticket_id" db:"ticket_id"`
+	IncidentID uuid.UUID `json:"incident_id" db:"incident_id"`
 	Summary    string    `json:"summary" db:"summary"`
 	Markdown   string    `json:"markdown" db:"markdown"`
 	Details    []byte    `json:"details,omitempty" db:"details"` // JSONB

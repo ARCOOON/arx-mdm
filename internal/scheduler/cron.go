@@ -33,14 +33,14 @@ type Deps struct {
 }
 
 type automationRow struct {
-	ID              uuid.UUID
-	Name            string
-	CronSchedule    string
-	ActionType      string
-	TargetOS        *string
-	TargetAssetID   *uuid.UUID
-	PayloadJSON     []byte
-	IsActive        bool
+	ID            uuid.UUID
+	Name          string
+	CronSchedule  string
+	ActionType    string
+	TargetOS      *string
+	TargetAssetID *uuid.UUID
+	PayloadJSON   []byte
+	IsActive      bool
 }
 
 type Scheduler struct {
@@ -182,8 +182,8 @@ func (s *Scheduler) dispatchAutomation(ctx context.Context, automationID uuid.UU
 SELECT id, name, cron_schedule, action_type, target_os, target_asset_id, payload_json, is_active
 FROM automations WHERE id = $1
 `, automationID).Scan(
-	&row.ID, &row.Name, &row.CronSchedule, &row.ActionType, &row.TargetOS, &row.TargetAssetID, &row.PayloadJSON, &row.IsActive,
-)
+		&row.ID, &row.Name, &row.CronSchedule, &row.ActionType, &row.TargetOS, &row.TargetAssetID, &row.PayloadJSON, &row.IsActive,
+	)
 	if err != nil {
 		if s.deps.Logger != nil && !errors.Is(err, pgx.ErrNoRows) {
 			s.deps.Logger.Warn("scheduler automation fetch failed", "automation_id", automationID.String(), "err", err)
@@ -277,7 +277,7 @@ func (s *Scheduler) dispatchShutdown(ctx context.Context, row automationRow, hum
 			"automation_id", row.ID.String(), "human_id", humanID)
 	}
 	s.auditDispatch(ctx, row, humanID, "automation.shutdown", map[string]any{
-		"automation_id": row.ID.String(),
+		"automation_id":   row.ID.String(),
 		"automation_name": row.Name,
 		"target_human_id": humanID,
 	})

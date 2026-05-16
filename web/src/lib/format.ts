@@ -1,4 +1,4 @@
-function formatBytes(n: number): string {
+export function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n <= 0) {
     return '0 B'
   }

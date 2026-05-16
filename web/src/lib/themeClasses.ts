@@ -10,7 +10,8 @@ export const shell = {
   cardPad: 'rounded border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-900/50',
   cardMuted: 'rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40',
   metric: 'rounded border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60',
-  tableWrap: 'overflow-hidden rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40',
+  tableWrap:
+    'min-w-0 overflow-x-auto rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40',
   input:
     'rounded border border-slate-300 bg-white px-2 py-1.5 text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-500',
   btnSecondary:

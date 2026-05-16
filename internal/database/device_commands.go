@@ -2,9 +2,11 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ARCOOON/arx-mdm/internal/models"
 
@@ -18,7 +20,7 @@ const (
 )
 
 // InsertDeviceCommand creates a pending command row for the given asset (device).
-func InsertDeviceCommand(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID, commandType, payload string) (models.DeviceCommand, error) {
+func InsertDeviceCommand(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID, commandType, payload string, incidentContext *uuid.UUID) (models.DeviceCommand, error) {
 	if pool == nil {
 		return models.DeviceCommand{}, errors.New("database: pool is required")
 	}
@@ -27,16 +29,22 @@ func InsertDeviceCommand(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.
 		return models.DeviceCommand{}, err
 	}
 	payload = strings.TrimSpace(payload)
-	if commandType != models.DeviceCommandTypeScript && payload != "" {
-		return models.DeviceCommand{}, fmt.Errorf("database: payload only allowed for script commands")
+	if commandType == models.DeviceCommandTypeScript ||
+		commandType == models.DeviceCommandTypeRestartService ||
+		commandType == models.DeviceCommandTypePushConfig {
+		if payload == "" {
+			return models.DeviceCommand{}, fmt.Errorf("database: payload required for command_type %s", commandType)
+		}
+	} else if payload != "" {
+		return models.DeviceCommand{}, fmt.Errorf("database: payload only allowed for script, restart_service, and push_config")
 	}
 
 	var cmd models.DeviceCommand
 	err := pool.QueryRow(ctx, `
-INSERT INTO device_commands (device_id, command_type, payload, status)
-VALUES ($1, $2, $3, $4)
+INSERT INTO device_commands (device_id, command_type, payload, incident_context_id, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, device_id, command_type, payload, status, output, created_at, completed_at
-`, deviceID, commandType, payload, models.DeviceCommandStatusPending).Scan(
+`, deviceID, commandType, payload, incidentContext, models.DeviceCommandStatusPending).Scan(
 		&cmd.ID, &cmd.DeviceID, &cmd.CommandType, &cmd.Payload, &cmd.Status, &cmd.Output, &cmd.CreatedAt, &cmd.CompletedAt,
 	)
 	if err != nil {
@@ -143,7 +151,11 @@ func CompleteDeviceCommand(ctx context.Context, pool *pgxpool.Pool, commandID uu
 	if err := updateDeviceCommandStatus(ctx, pool, commandID, models.DeviceCommandStatusCompleted, output, true); err != nil {
 		return models.DeviceCommand{}, err
 	}
-	return GetDeviceCommand(ctx, pool, commandID, uuid.Nil)
+	cmd, gerr := GetDeviceCommand(ctx, pool, commandID, uuid.Nil)
+	if gerr == nil && pool != nil {
+		_ = AppendIncidentJournalForTerminalCommand(ctx, pool, cmd.ID, true, cmd.Output, uuid.Nil, "")
+	}
+	return cmd, gerr
 }
 
 // FailDeviceCommand records a failed execution with output or error text.
@@ -152,7 +164,11 @@ func FailDeviceCommand(ctx context.Context, pool *pgxpool.Pool, commandID uuid.U
 	if err := updateDeviceCommandStatus(ctx, pool, commandID, models.DeviceCommandStatusFailed, output, true); err != nil {
 		return models.DeviceCommand{}, err
 	}
-	return GetDeviceCommand(ctx, pool, commandID, uuid.Nil)
+	cmd, gerr := GetDeviceCommand(ctx, pool, commandID, uuid.Nil)
+	if gerr == nil && pool != nil {
+		_ = AppendIncidentJournalForTerminalCommand(ctx, pool, cmd.ID, false, cmd.Output, uuid.Nil, "")
+	}
+	return cmd, gerr
 }
 
 // FailDeviceCommandIfPending marks a never-dispatched command as failed (e.g. agent offline).
@@ -171,6 +187,7 @@ WHERE id = $1 AND status = $4
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("database: command not in pending state")
 	}
+	_ = AppendIncidentJournalForTerminalCommand(ctx, pool, commandID, false, message, uuid.Nil, "")
 	return nil
 }
 
@@ -206,7 +223,8 @@ WHERE id = $1
 
 func validateDeviceCommandType(t string) error {
 	switch t {
-	case models.DeviceCommandTypePing, models.DeviceCommandTypeReboot, models.DeviceCommandTypeScript:
+	case models.DeviceCommandTypePing, models.DeviceCommandTypeReboot, models.DeviceCommandTypeScript,
+		models.DeviceCommandTypeRestartService, models.DeviceCommandTypePushConfig:
 		return nil
 	default:
 		return fmt.Errorf("database: invalid command_type %q", t)
@@ -228,4 +246,46 @@ func truncateOutput(s string) string {
 		return s
 	}
 	return s[:maxDeviceCommandOutputLen] + "\n…(output truncated)"
+}
+
+// AppendIncidentJournalForTerminalCommand mirrors C2 telemetry into incidents.work_notes for linked contexts.
+func AppendIncidentJournalForTerminalCommand(ctx context.Context, pool *pgxpool.Pool, commandID uuid.UUID, success bool, output string, operator uuid.UUID, operatorName string) error {
+	if pool == nil || commandID == uuid.Nil {
+		return errors.New("database: incident journal args invalid")
+	}
+	var incidentID *uuid.UUID
+	var ctype, status string
+	var outText string
+	err := pool.QueryRow(ctx, `
+SELECT incident_context_id, command_type, status, output
+FROM device_commands
+WHERE id = $1
+`, commandID).Scan(&incidentID, &ctype, &status, &outText)
+	if err != nil {
+		return err
+	}
+	if incidentID == nil || *incidentID == uuid.Nil {
+		return nil
+	}
+	note := map[string]any{
+		"ts":           time.Now().UTC().Format(time.RFC3339),
+		"author_type":  "operator",
+		"kind":         "c2_command",
+		"command_id":   commandID.String(),
+		"command_type": ctype,
+		"success":      success,
+		"exit_state":   status,
+		"agent_output": truncateOutput(strings.TrimSpace(output)),
+	}
+	if operator != uuid.Nil {
+		note["operator_user_id"] = operator.String()
+		if strings.TrimSpace(operatorName) != "" {
+			note["operator_username"] = strings.TrimSpace(operatorName)
+		}
+	}
+	blob, err := json.Marshal(note)
+	if err != nil {
+		return err
+	}
+	return AppendIncidentWorkNoteJSON(ctx, pool, *incidentID, blob)
 }

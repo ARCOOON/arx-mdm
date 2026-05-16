@@ -456,16 +456,40 @@ WHERE id = $1
 
 // ResolveActiveAlertsKindsForDevice clears offline rows after a heartbeat.
 func ResolveActiveAlertsKindsForDevice(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID) error {
+	_, err := ResolveActiveAlertsKindsForDeviceReturning(ctx, pool, deviceID)
+	return err
+}
+
+// ResolveActiveAlertsKindsForDeviceReturning marks offline alerts resolved and returns their fingerprints.
+func ResolveActiveAlertsKindsForDeviceReturning(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID) ([]string, error) {
+	var nilOut []string
 	if pool == nil || deviceID == uuid.Nil {
-		return errors.New("database: resolve offline args")
+		return nilOut, errors.New("database: resolve offline args")
 	}
-	_, err := pool.Exec(ctx, `
+	rows, err := pool.Query(ctx, `
 UPDATE active_alerts SET resolved_at = now()
 WHERE resolved_at IS NULL
   AND device_id = $1
   AND alert_kind IN ('builtin_offline','rule_offline')
+RETURNING fingerprint
 `, deviceID)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var fp string
+		if scanErr := rows.Scan(&fp); scanErr != nil {
+			return nil, scanErr
+		}
+		fp = strings.TrimSpace(fp)
+		if fp != "" {
+			out = append(out, fp)
+		}
+	}
+	return out, rows.Err()
 }
 
 // ResolveActiveAlertByID marks one row resolved manually.
@@ -539,19 +563,47 @@ LIMIT $1
 
 // CloseAlertsKindsExcept resolves open alerts of alertKind unless their fingerprint stays in desiredFingerprints.
 func CloseAlertsKindsExcept(ctx context.Context, pool *pgxpool.Pool, alertKind string, desiredFingerprints map[string]struct{}) error {
+	_, err := CloseAlertsKindsExceptReturning(ctx, pool, alertKind, desiredFingerprints)
+	return err
+}
+
+// CloseAlertsKindsExceptReturning behaves like CloseAlertsKindsExcept but returns fingerprints that were resolved.
+func CloseAlertsKindsExceptReturning(ctx context.Context, pool *pgxpool.Pool, alertKind string, desiredFingerprints map[string]struct{}) ([]string, error) {
+	var nilOut []string
 	if pool == nil {
-		return errors.New("database: pool is required")
+		return nilOut, errors.New("database: pool is required")
 	}
 	k := strings.TrimSpace(alertKind)
 	if k == "" {
-		return errors.New("database: alert kind required")
+		return nilOut, errors.New("database: alert kind required")
 	}
-	if len(desiredFingerprints) == 0 {
-		_, err := pool.Exec(ctx, `
+
+	closeAll := func() ([]string, error) {
+		rows, err := pool.Query(ctx, `
 UPDATE active_alerts SET resolved_at = now()
 WHERE resolved_at IS NULL AND alert_kind = $1
+RETURNING fingerprint
 `, k)
-		return err
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var out []string
+		for rows.Next() {
+			var fp string
+			if scanErr := rows.Scan(&fp); scanErr != nil {
+				return nil, scanErr
+			}
+			fp = strings.TrimSpace(fp)
+			if fp != "" {
+				out = append(out, fp)
+			}
+		}
+		return out, rows.Err()
+	}
+
+	if len(desiredFingerprints) == 0 {
+		return closeAll()
 	}
 	set := make([]string, 0, len(desiredFingerprints))
 	for fp := range desiredFingerprints {
@@ -561,19 +613,32 @@ WHERE resolved_at IS NULL AND alert_kind = $1
 		}
 	}
 	if len(set) == 0 {
-		_, err := pool.Exec(ctx, `
-UPDATE active_alerts SET resolved_at = now()
-WHERE resolved_at IS NULL AND alert_kind = $1
-`, k)
-		return err
+		return closeAll()
 	}
-	_, err := pool.Exec(ctx, `
+
+	rows, err := pool.Query(ctx, `
 UPDATE active_alerts SET resolved_at = now()
 WHERE resolved_at IS NULL
   AND alert_kind = $2
   AND fingerprint <> ALL ($1::text[])
+RETURNING fingerprint
 `, set, k)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var fp string
+		if scanErr := rows.Scan(&fp); scanErr != nil {
+			return nil, scanErr
+		}
+		fp = strings.TrimSpace(fp)
+		if fp != "" {
+			out = append(out, fp)
+		}
+	}
+	return out, rows.Err()
 }
 
 // NotificationChannelRow is persisted delivery configuration loaded by notifications.Dispatcher.

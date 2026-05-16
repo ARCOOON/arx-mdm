@@ -15,7 +15,7 @@ import type {
   CommandResultMessage,
   ServerMessage,
   ShutdownCommand,
-  TicketRow,
+  IncidentRow,
 } from '../types/ws'
 
 export type ConnectionState =
@@ -29,7 +29,7 @@ export type DashboardWebSocketValue = {
   connectionState: ConnectionState
   lastError: string | null
   assets: AssetRow[]
-  tickets: TicketRow[]
+  incidents: IncidentRow[]
   lastCommandResult: CommandResultMessage | null
   sendJson: (payload: ShutdownCommand | Record<string, unknown>) => void
   subscribeAgentUplink: (
@@ -77,7 +77,7 @@ function parseServerMessage(raw: unknown): ServerMessage | null {
   const o = raw as { type?: string }
   switch (o.type) {
     case 'asset_snapshot':
-    case 'ticket_snapshot':
+    case 'incident_snapshot':
     case 'telemetry_update':
     case 'command_result':
     case 'android_policy_updated':
@@ -95,7 +95,7 @@ function useDashboardWebSocketState(authToken: string): DashboardWebSocketValue 
   const [assetsByID, setAssetsByID] = useState<Map<string, AssetRow>>(
     () => new Map(),
   )
-  const [tickets, setTickets] = useState<TicketRow[]>([])
+  const [incidents, setIncidents] = useState<IncidentRow[]>([])
   const [lastCommandResult, setLastCommandResult] =
     useState<CommandResultMessage | null>(null)
 
@@ -233,8 +233,8 @@ function useDashboardWebSocketState(authToken: string): DashboardWebSocketValue 
             setAssetsByID(next)
             break
           }
-          case 'ticket_snapshot':
-            setTickets(msg.tickets ?? [])
+          case 'incident_snapshot':
+            setIncidents(msg.incidents ?? [])
             break
           case 'telemetry_update':
             setAssetsByID((prev) => {
@@ -292,7 +292,7 @@ function useDashboardWebSocketState(authToken: string): DashboardWebSocketValue 
     connectionState,
     lastError,
     assets,
-    tickets,
+    incidents,
     lastCommandResult,
     sendJson,
     subscribeAgentUplink,

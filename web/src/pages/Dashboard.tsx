@@ -14,7 +14,7 @@ import {
   HardDrive,
   Loader2,
   RefreshCw,
-  Ticket,
+  Headphones,
   WifiOff,
 } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -51,7 +51,7 @@ function osChartData(dist: Record<string, number> | undefined) {
 
 export function DashboardPage() {
   const { theme } = useTheme()
-  const { assets, connectionState, tickets } = useWebSocket()
+  const { assets, connectionState, incidents } = useWebSocket()
   const isDark = theme === 'dark'
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [summaryErr, setSummaryErr] = useState<string | null>(null)
@@ -136,13 +136,13 @@ export function DashboardPage() {
           }
         />
         <MetricCard
-          icon={<Ticket className="size-4 text-violet-400" />}
-          label="Open tickets"
+          icon={<Headphones className="size-4 text-violet-400" />}
+          label="Open incidents"
           value={
             summaryLoading && !summary ? (
               <InlineLoad />
             ) : (
-              String(summary?.tickets.unresolved ?? '—')
+              String(summary?.incidents.unresolved ?? '—')
             )
           }
         />
@@ -192,9 +192,9 @@ export function DashboardPage() {
           value={`${avgCpu.toFixed(1)}%`}
         />
         <MetricCard
-          icon={<Ticket className="size-4 text-slate-500" />}
-          label="Tickets in stream"
-          value={String(tickets.length)}
+          icon={<Headphones className="size-4 text-slate-500" />}
+          label="Incidents in stream"
+          value={String(incidents.length)}
         />
       </div>
 

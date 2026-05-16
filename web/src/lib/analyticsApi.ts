@@ -8,7 +8,7 @@ export type AnalyticsSummary = {
     offline: number
   }
   os_distribution: Record<string, number>
-  tickets: {
+  incidents: {
     unresolved: number
   }
 }

@@ -21,12 +21,13 @@ export type AssetRow = {
   installed_software?: TelemetryInstalledApp[]
 }
 
-export type TicketRow = {
+export type IncidentRow = {
   id?: string
-  ticket_ref: string
-  title: string
-  status: string
-  priority?: string
+  incident_number: string
+  short_description: string
+  state: string
+  priority: number
+  sla_due: string
   linked_arx_id?: string
   created_at: string
 }
@@ -36,9 +37,9 @@ export type AssetSnapshotMessage = {
   assets: AssetRow[]
 }
 
-export type TicketSnapshotMessage = {
-  type: 'ticket_snapshot'
-  tickets: TicketRow[]
+export type IncidentSnapshotMessage = {
+  type: 'incident_snapshot'
+  incidents: IncidentRow[]
 }
 
 export type TelemetryUpdateMessage = {
@@ -193,7 +194,7 @@ export type AgentUplinkMessage =
 
 export type ServerMessage =
   | AssetSnapshotMessage
-  | TicketSnapshotMessage
+  | IncidentSnapshotMessage
   | TelemetryUpdateMessage
   | CommandResultMessage
   | AndroidPolicyUpdatedMessage

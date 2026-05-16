@@ -34,6 +34,7 @@ const (
 	envJWTTTL             = "ARX_JWT_TTL"
 	envBootstrapAdminUser = "ARX_BOOTSTRAP_ADMIN_USERNAME"
 	envBootstrapAdminPass = "ARX_BOOTSTRAP_ADMIN_PASSWORD"
+	envAppsStoragePath    = "ARX_APPS_STORAGE_PATH"
 )
 
 func main() {

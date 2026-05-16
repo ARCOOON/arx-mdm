@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/ARCOOON/arx-mdm/internal/alerting"
 	"github.com/ARCOOON/arx-mdm/internal/api"
 	"github.com/ARCOOON/arx-mdm/internal/auth"
+	"github.com/ARCOOON/arx-mdm/internal/backup"
 	"github.com/ARCOOON/arx-mdm/internal/database"
 	"github.com/ARCOOON/arx-mdm/internal/notifications"
 	"github.com/ARCOOON/arx-mdm/internal/pki"
@@ -62,6 +64,22 @@ func runServe(logger *slog.Logger) error {
 	}
 	logger.Info("embedded pki ready", "storage", caAuthority.StorageDir(), "mtls_client_ca_bundle", caAuthority.MTLSClientCABundlePath())
 
+	pkiStorageAbs := filepath.Clean(caAuthority.StorageDir())
+	backupCfg, backupCfgErr := backup.LoadConfigFromEnv(pkiStorageAbs)
+	if backupCfgErr != nil {
+		return fmt.Errorf("backup configuration: %w", backupCfgErr)
+	}
+	backupCfg.DatabaseURL = dsn
+	backupEngine, backupInitErr := backup.NewEngine(backupCfg, logger)
+	if backupInitErr != nil {
+		return fmt.Errorf("backup engine initialization: %w", backupInitErr)
+	}
+	logger.Info("disaster recovery backup engine initialized",
+		"storage_dir", backupCfg.StorageDir,
+		"pki_snapshot_root", filepath.Clean(backupCfg.PKIRootAbs),
+		"cron_spec", backupCfg.CronExpr,
+		"retention_days", backupCfg.RetentionDays,
+	)
 	store := auth.NewPGXEnrollmentStore(pool)
 	coordinator := auth.NewEnrollmentCoordinator(store, caAuthority)
 
@@ -69,6 +87,19 @@ func runServe(logger *slog.Logger) error {
 	tlsKeyPath := strings.TrimSpace(os.Getenv(envTLSKey))
 	mtlsCAPath := strings.TrimSpace(os.Getenv(envMTLSClientCABundle))
 	mtlsReady := tlsCertPath != "" && tlsKeyPath != "" && mtlsCAPath != ""
+
+	appsRootRaw := strings.TrimSpace(os.Getenv(envAppsStoragePath))
+	if appsRootRaw == "" {
+		appsRootRaw = "data/apps"
+	}
+	appsAbs, appsErr := filepath.Abs(appsRootRaw)
+	if appsErr != nil {
+		return fmt.Errorf("resolve %s: %w", envAppsStoragePath, appsErr)
+	}
+	if mkdirErr := os.MkdirAll(appsAbs, 0o750); mkdirErr != nil {
+		return fmt.Errorf("ensure apps storage directory %s: %w", appsAbs, mkdirErr)
+	}
+	logger.Info("app catalog artifact storage initialized", "path", appsAbs, "env", envAppsStoragePath)
 
 	var tlsCfg *tls.Config
 	if mtlsReady {
@@ -88,7 +119,6 @@ func runServe(logger *slog.Logger) error {
 	dashboardOrigins := parseDashboardOrigins(os.Getenv("ARX_DASHBOARD_ORIGINS"))
 
 	bgWorkersCtx, bgWorkersCancel := context.WithCancel(context.Background())
-	defer bgWorkersCancel()
 	notifDispatcher := notifications.NewDispatcher(pool, logger)
 	notifDispatcher.Start(bgWorkersCtx)
 	alertEngine := alerting.NewEngine(alerting.Dependencies{
@@ -104,6 +134,8 @@ func runServe(logger *slog.Logger) error {
 		Logger:         logger,
 		ReloadInterval: time.Minute,
 	})
+
+	go backupEngine.AttachScheduler(bgWorkersCtx)
 
 	jwtSecret := strings.TrimSpace(os.Getenv(envJWTSecret))
 	if jwtSecret == "" {
@@ -166,6 +198,7 @@ func runServe(logger *slog.Logger) error {
 		Origins: dashboardOrigins,
 	})
 	api.RegisterAuditRoutes(mux, api.AuditDeps{Pool: pool, Logger: logger, Auth: dashAuth})
+	api.RegisterBackupRoutes(mux, api.BackupsDeps{Engine: backupEngine, Logger: logger, Auth: dashAuth})
 	api.RegisterUsersAdminRoutes(mux, api.UsersAdminDeps{Pool: pool, Logger: logger, Auth: dashAuth})
 	api.RegisterKnowledgeRoutes(mux, api.KnowledgeDeps{Pool: pool, Logger: logger, Auth: dashAuth})
 	api.RegisterAnalyticsRoutes(mux, api.AnalyticsDeps{Pool: pool, Logger: logger, Auth: dashAuth})
@@ -256,6 +289,15 @@ func runServe(logger *slog.Logger) error {
 			return api.ResolveAssetCertSerial(ctx, pool, deviceID)
 		},
 	})
+	api.RegisterDeviceSecurityRoutes(mux, api.DeviceSecurityDeps{
+		Pool:     pool,
+		Logger:   logger,
+		Auth:     dashAuth,
+		Dispatch: c2Hub.DispatchJSON,
+		ResolveAsset: func(ctx context.Context, deviceID uuid.UUID) (string, error) {
+			return api.ResolveAssetCertSerial(ctx, pool, deviceID)
+		},
+	})
 	api.RegisterDeviceMetricsRoutes(mux, api.DeviceMetricsDeps{
 		Pool:   pool,
 		Logger: logger,
@@ -266,6 +308,20 @@ func runServe(logger *slog.Logger) error {
 		Pool:   pool,
 		Logger: logger,
 		Auth:   dashAuth,
+	})
+
+	api.RegisterAgentAppArtifactRoutes(mux, api.AgentAppArtifactDeps{
+		Pool:         pool,
+		Logger:       logger,
+		MTLSRequired: mtlsReady,
+		AppsRoot:     appsAbs,
+	})
+	api.RegisterAppCatalogRoutes(mux, api.AppCatalogDeps{
+		Pool:     pool,
+		Logger:   logger,
+		Auth:     dashAuth,
+		C2Hub:    c2Hub,
+		AppsRoot: appsAbs,
 	})
 
 	api.NewFilesHandler(mux, api.FilesDeps{

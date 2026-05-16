@@ -65,6 +65,23 @@ export type AndroidPolicyUpdatedMessage = {
   policy: AndroidPolicyWire
 }
 
+export type DeviceCommandWire = {
+  id: string
+  device_id: string
+  command_type: string
+  payload?: string
+  status: string
+  output?: string
+  created_at: string
+  completed_at?: string | null
+  target_arx_id: string
+}
+
+export type DeviceCommandUpdateMessage = {
+  type: 'device_command_update'
+  command: DeviceCommandWire
+}
+
 export type RegistryResultMessage = {
   type: 'registry_result'
   target_arx_id: string
@@ -170,6 +187,7 @@ export type ServerMessage =
   | TelemetryUpdateMessage
   | CommandResultMessage
   | AndroidPolicyUpdatedMessage
+  | DeviceCommandUpdateMessage
 
 export type ShutdownCommand = {
   action: 'shutdown'

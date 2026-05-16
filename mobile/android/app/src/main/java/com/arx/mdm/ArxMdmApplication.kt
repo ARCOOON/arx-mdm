@@ -42,6 +42,7 @@ class ArxMdmApplication : Application() {
             ExistingPeriodicWorkPolicy.KEEP,
             req,
         )
+        AgentService.startOrRestart(this)
     }
 
     companion object {

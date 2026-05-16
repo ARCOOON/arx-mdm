@@ -3,4 +3,7 @@
     <string name="app_name">ARX MDM</string>
     <string name="device_admin_label">ARX Device Policy</string>
     <string name="device_admin_description">ARX MDM device owner controller for managed Android endpoints.</string>
+    <string name="arx_c2_channel_name">Command channel</string>
+    <string name="arx_c2_notification_title">ARX MDM connected</string>
+    <string name="arx_c2_notification_body">Secure command/control session is active</string>
 </resources>

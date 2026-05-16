@@ -31,6 +31,40 @@ object ArxMtlsRetrofit {
     }
 
     fun androidKeyStoreMtls(baseUrl: String, secure: ArxSecureState): Retrofit {
+        val client = mtlsOkHttpClient(secure).newBuilder()
+            .readTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
+            .build()
+
+        return Retrofit.Builder()
+            .baseUrl(normalizeBaseUrl(baseUrl))
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().serializeNulls().create()))
+            .build()
+    }
+
+    /**
+     * OkHttp instance that presents the enrollment client certificate chain (TLS mutual auth).
+     * Read timeout is deliberately unbounded so long polling / websocket reads are not clipped.
+     */
+    fun mtlsOkHttpClient(secure: ArxSecureState): OkHttpClient {
+        val tls = androidKeyStoreTls(secure)
+        return OkHttpClient.Builder()
+            .sslSocketFactory(tls.sslContext.socketFactory, tls.trustManager)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS)
+            .writeTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(0, TimeUnit.SECONDS)
+            .pingInterval(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private data class AndroidKeyStoreTls(
+        val sslContext: SSLContext,
+        val trustManager: X509TrustManager,
+    )
+
+    private fun androidKeyStoreTls(secure: ArxSecureState): AndroidKeyStoreTls {
         val rootPem = secure.getRootCaPem() ?: error("missing stored root CA PEM")
         val root = PemCertificates.parseChain(rootPem).first()
         val trustStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
@@ -48,19 +82,7 @@ object ArxMtlsRetrofit {
         val sslContext = SSLContext.getInstance("TLS").apply {
             init(kmf.keyManagers, tmf.trustManagers, SecureRandom())
         }
-
-        val client = OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustManager)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl(normalizeBaseUrl(baseUrl))
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().serializeNulls().create()))
-            .build()
+        return AndroidKeyStoreTls(sslContext, trustManager)
     }
 
     private fun normalizeBaseUrl(url: String): String {

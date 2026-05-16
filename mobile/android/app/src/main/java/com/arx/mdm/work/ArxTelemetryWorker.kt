@@ -7,7 +7,7 @@ import androidx.work.WorkerParameters
 import com.arx.mdm.network.ArxMtlsRetrofit
 import com.arx.mdm.network.ArxSecureState
 import com.arx.mdm.network.TelemetryService
-import com.arx.mdm.policy.PolicyManager
+import com.arx.mdm.PolicyManager
 import com.arx.mdm.util.TelemetrySnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,6 +37,7 @@ class ArxTelemetryWorker(
             val body = TelemetrySnapshot.build(ctx)
             val response = api.postTelemetry(body)
             PolicyManager(ctx).applyServerPolicy(response.androidPolicy)
+            state.setLastTelemetrySyncEpochMillis(System.currentTimeMillis())
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "telemetry failed", e)

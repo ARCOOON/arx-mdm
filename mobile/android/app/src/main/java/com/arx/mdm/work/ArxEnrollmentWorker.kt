@@ -15,6 +15,7 @@ import com.arx.mdm.network.ArxMtlsRetrofit
 import com.arx.mdm.network.ArxSecureState
 import com.arx.mdm.network.EnrollWireRequest
 import com.arx.mdm.network.EnrollmentService
+import com.arx.mdm.AgentService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -38,6 +39,7 @@ class ArxEnrollmentWorker(
             return@withContext Result.failure()
         }
         if (state.isMtlsEnrolled()) {
+            AgentService.startOrRestart(ctx)
             return@withContext Result.success()
         }
         try {
@@ -61,6 +63,7 @@ class ArxEnrollmentWorker(
                 ExistingPeriodicWorkPolicy.KEEP,
                 periodic,
             )
+            AgentService.startOrRestart(ctx)
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "enrollment failed", e)

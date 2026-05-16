@@ -28,5 +28,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
             ExistingPeriodicWorkPolicy.KEEP,
             req,
         )
+        AgentService.startOrRestart(app)
     }
 }

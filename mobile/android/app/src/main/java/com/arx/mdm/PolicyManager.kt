@@ -1,4 +1,4 @@
-package com.arx.mdm.policy
+package com.arx.mdm
 
 import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
@@ -8,8 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
 import android.util.Log
-import com.arx.mdm.ArxDeviceAdminReceiver
 import com.arx.mdm.network.AndroidPolicyWireDto
+import com.arx.mdm.policy.ArxInstallResultReceiver
 import java.io.File
 import java.io.FileInputStream
 
@@ -20,11 +20,30 @@ class PolicyManager(
     private val context: Context,
     private val dpm: DevicePolicyManager =
         context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager,
-    private val admin: ComponentName = ArxDeviceAdminReceiver.componentName(context),
+    private val admin: ComponentName = AdminReceiver.componentName(context),
 ) {
 
     fun isDeviceOwner(): Boolean =
         dpm.isDeviceOwnerApp(context.packageName)
+
+    /**
+     * Sets minimum password quality (e.g. [DevicePolicyManager.PASSWORD_QUALITY_ALPHANUMERIC])
+     * and optional minimum length when length is greater than zero.
+     */
+    fun setPasswordQualityAndLength(passwordQuality: Int, minimumLength: Int) {
+        if (!isDeviceOwner()) {
+            Log.w(TAG, "setPasswordQuality ignored: not device owner")
+            return
+        }
+        try {
+            dpm.setPasswordQuality(admin, passwordQuality)
+            if (minimumLength > 0) {
+                dpm.setMinimumPasswordLength(admin, minimumLength)
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "setPasswordQuality denied", e)
+        }
+    }
 
     /**
      * Disables or enables all cameras on the device (device owner / API 30+).
@@ -99,6 +118,13 @@ class PolicyManager(
      * Silently installs an APK using [PackageInstaller] (device owner; no confirmation UI when supported).
      */
     fun installApkSilently(apkFile: File) {
+        installApkSilently(apkFile, null)
+    }
+
+    /**
+     * @param correlationAppId Optional catalog UUID used when reporting outcomes to the MDM uplink channel.
+     */
+    fun installApkSilently(apkFile: File, correlationAppId: String?) {
         if (!isDeviceOwner()) {
             Log.w(TAG, "installApkSilently ignored: not device owner")
             return
@@ -127,6 +153,10 @@ class PolicyManager(
             val callbackIntent = Intent(ArxInstallResultReceiver.ACTION_INSTALL_COMPLETE).apply {
                 setPackage(context.packageName)
                 putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId)
+                val cid = correlationAppId?.trim()
+                if (!cid.isNullOrEmpty()) {
+                    putExtra(ArxInstallResultReceiver.EXTRA_APP_CORRELATION_ID, cid)
+                }
             }
             val piFlags = PendingIntent.FLAG_UPDATE_CURRENT or
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

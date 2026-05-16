@@ -53,11 +53,19 @@ class ArxSecureState(context: Context) {
 
     fun isMtlsEnrolled(): Boolean = prefs.getBoolean(KEY_MTLS_ENROLLED, false)
 
+    fun setLastTelemetrySyncEpochMillis(millis: Long) {
+        prefs.edit().putLong(KEY_LAST_TELEMETRY_SYNC_MS, millis).apply()
+    }
+
+    /** Wall-clock millis of last successful HTTP [TelemetryService.postTelemetry], or 0 if unknown. */
+    fun getLastTelemetrySyncEpochMillis(): Long = prefs.getLong(KEY_LAST_TELEMETRY_SYNC_MS, 0L)
+
     companion object {
         private const val PREFS_FILE = "arx_mdm_secure_prefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_ENROLLMENT_TOKEN = "enrollment_token"
         private const val KEY_ROOT_CA_PEM = "root_ca_pem"
         private const val KEY_MTLS_ENROLLED = "mtls_enrolled"
+        private const val KEY_LAST_TELEMETRY_SYNC_MS = "last_telemetry_sync_epoch_ms"
     }
 }

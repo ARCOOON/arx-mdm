@@ -50,6 +50,7 @@ export function DeviceCommandPanel({
   const [commands, setCommands] = useState<DeviceCommandRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [successFlash, setSuccessFlash] = useState<string | null>(null)
   const [commandType, setCommandType] = useState<CommandType>('ping')
   const [scriptBody, setScriptBody] = useState('echo "hello from ARX"')
   const [submitting, setSubmitting] = useState(false)
@@ -95,6 +96,12 @@ export function DeviceCommandPanel({
         created_at: updated.created_at,
         completed_at: updated.completed_at ?? null,
       }
+      if (row.status === 'completed') {
+        setSuccessFlash(
+          `${row.command_type} command completed successfully.`,
+        )
+        window.setTimeout(() => setSuccessFlash(null), 8000)
+      }
       setCommands((prev) => {
         const idx = prev.findIndex((c) => c.id === row.id)
         if (idx >= 0) {
@@ -134,6 +141,14 @@ export function DeviceCommandPanel({
   return (
     <section className="space-y-3 rounded border border-slate-200 bg-slate-100/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/40">
       <PanelHeader humanId={humanId} c2Connected={c2Connected} readOnly={!canOperate} />
+      {successFlash ? (
+        <div
+          role="alert"
+          className="rounded border border-emerald-700/60 bg-emerald-950/25 px-3 py-2 text-[12px] text-emerald-100"
+        >
+          {successFlash}
+        </div>
+      ) : null}
       {canOperate ? (
       <CommandForm
         commandType={commandType}

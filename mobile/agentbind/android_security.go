@@ -8,6 +8,7 @@ import "sync"
 type AndroidSecurity interface {
 	LockDevice()
 	WipeEnterprise()
+	ApplyQuarantine(enabled bool)
 }
 
 var androidSecMu sync.Mutex

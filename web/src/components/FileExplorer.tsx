@@ -88,6 +88,8 @@ type Props = {
   sendJson: (payload: Record<string, unknown>) => void
   subscribeAgentUplink: (handler: (msg: AgentUplinkMessage) => void) => () => void
   initialPath?: string
+  /** When false, hides upload (viewer / read-only). Defaults to true. */
+  allowMutations?: boolean
 }
 
 export function FileExplorer({
@@ -97,6 +99,7 @@ export function FileExplorer({
   sendJson,
   subscribeAgentUplink,
   initialPath = '/',
+  allowMutations = true,
 }: Props) {
   const [path, setPath] = useState(initialPath)
   const [entries, setEntries] = useState<DirEntryRow[]>([])
@@ -234,6 +237,7 @@ export function FileExplorer({
           <RefreshCw className="size-3" />
           Refresh
         </button>
+        {allowMutations ? (
         <label className="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-300 dark:border-slate-700 px-2 py-0.5 text-slate-700 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-40">
           <Upload className="size-3" />
           Upload
@@ -244,6 +248,7 @@ export function FileExplorer({
             onChange={onUploadPick}
           />
         </label>
+        ) : null}
       </div>
 
       <nav className="flex flex-wrap items-center gap-0.5 text-[11px] text-slate-500">

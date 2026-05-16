@@ -9,12 +9,13 @@ import {
   Users,
   ClipboardList,
   LogOut,
-  Bell,
+  Sliders,
   Timer,
 } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../context/AuthContext'
 import { shell } from '../lib/themeClasses'
+import { NotificationCenter } from './NotificationCenter'
 import { ThemeToggle } from './ThemeToggle'
 
 function statusDot(state: string) {
@@ -60,7 +61,12 @@ export function AppLayout() {
                 </div>
               ) : null}
             </div>
-            <ThemeToggle />
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <div className="flex items-center gap-1">
+                <NotificationCenter />
+                <ThemeToggle />
+              </div>
+            </div>
           </div>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 p-2">
@@ -128,7 +134,7 @@ export function AppLayout() {
               }
             >
               <ClipboardList className="size-3.5 shrink-0 opacity-80" />
-              Audit logs
+              System logs
             </NavLink>
           ) : null}
           {isAdmin ? (
@@ -138,7 +144,7 @@ export function AppLayout() {
                 `${shell.nav} ${isActive ? shell.navActive : ''}`
               }
             >
-              <Bell className="size-3.5 shrink-0 opacity-80" />
+              <Sliders className="size-3.5 shrink-0 opacity-80" />
               Settings &amp; alerts
             </NavLink>
           ) : null}

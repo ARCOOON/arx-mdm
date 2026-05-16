@@ -22,14 +22,17 @@ type Asset struct {
 
 // Ticket is a work item using the required ticket reference prefixes (INC-, REQ-, CHG-, PRJ-).
 type Ticket struct {
-	ID        uuid.UUID  `json:"id" db:"id"`
-	TicketRef string     `json:"ticket_ref" db:"ticket_ref"`
-	Title     string     `json:"title" db:"title"`
-	Status    string     `json:"status" db:"status"`
-	Priority  string     `json:"priority" db:"priority"`
-	AssetID   *uuid.UUID `json:"asset_id,omitempty" db:"asset_id"`
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID  `json:"id" db:"id"`
+	TicketRef   string     `json:"ticket_ref" db:"ticket_ref"`
+	Title       string     `json:"title" db:"title"`
+	Description string     `json:"description,omitempty" db:"description"`
+	Status      string     `json:"status" db:"status"`
+	Priority    string     `json:"priority" db:"priority"`
+	DeviceID    *uuid.UUID `json:"device_id,omitempty" db:"device_id"`
+	CreatedBy   *uuid.UUID `json:"created_by,omitempty" db:"created_by"`
+	AssignedTo  *uuid.UUID `json:"assigned_to,omitempty" db:"assigned_to"`
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // Resolution records how a ticket was closed or superseded.
@@ -107,9 +110,12 @@ type AndroidPolicy struct {
 // AuditLog is an append-only operator or system action record (REST mutation or C&C dispatch).
 type AuditLog struct {
 	ID            uuid.UUID  `json:"id" db:"id"`
-	LoggedAt      time.Time  `json:"timestamp" db:"logged_at"`
+	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
 	UserID        *uuid.UUID `json:"user_id,omitempty" db:"user_id"`
 	Action        string     `json:"action" db:"action"`
+	ResourceType  string     `json:"resource_type,omitempty" db:"resource_type"`
+	ResourceID    *uuid.UUID `json:"resource_id,omitempty" db:"resource_id"`
 	TargetAssetID *uuid.UUID `json:"target_asset_id,omitempty" db:"target_asset_id"`
-	DetailsJSON   []byte     `json:"details,omitempty" db:"details_json"` // JSONB
+	DetailsJSON   []byte     `json:"details,omitempty" db:"details"` // JSONB column "details"
+	IPAddress     *string    `json:"ip_address,omitempty" db:"ip_address"`
 }

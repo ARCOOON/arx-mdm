@@ -97,6 +97,18 @@ func HandleDownlink(ctx context.Context, logger *slog.Logger, write JSONWriter, 
 			}
 			_ = reportResult(write, commandID, true, out, "")
 		}()
+	case "quarantine":
+		go func() {
+			out, err := executeQuarantine(cmd.Payload)
+			if err != nil {
+				if logger != nil {
+					logger.Error("device command quarantine failed", "command_id", commandID, "err", err)
+				}
+				_ = reportResult(write, commandID, false, out, err.Error())
+				return
+			}
+			_ = reportResult(write, commandID, true, out, "")
+		}()
 	default:
 		_ = reportResult(write, commandID, false, "", fmt.Sprintf("unsupported command_type %q", commandType))
 	}
@@ -123,6 +135,8 @@ func dispatch(ctx context.Context, commandType, payload string) (string, error) 
 			return "", err
 		}
 		return executeScript(ctx, body)
+	case "quarantine":
+		return executeQuarantine(payload)
 	default:
 		return "", fmt.Errorf("unsupported command_type %q", commandType)
 	}

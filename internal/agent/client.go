@@ -36,6 +36,8 @@ type RunOptions struct {
 	TelemetryInterval time.Duration
 	// TelemetryKick, when non-nil, triggers an immediate telemetry send in addition to the ticker.
 	TelemetryKick <-chan struct{}
+	// DeclarativeProfileInterval configures HTTPS pulls for declarative payloads; zero defaults to ~90 seconds.
+	DeclarativeProfileInterval time.Duration
 	// Optional observers for UI or bindings (e.g. Android). Nil funcs are ignored.
 	OnConnecting    func()
 	OnConnected     func()
@@ -129,6 +131,11 @@ func Run(ctx context.Context, opts RunOptions) error {
 		go func() {
 			defer wg.Done()
 			runTelemetryLoop(sessCtx, opts.Logger, conn, interval, opts.TelemetryKick, opts.OnTelemetrySent)
+		}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			runMDMDeclarativeSyncLoop(sessCtx, opts.Logger, server, certDir, opts.DeclarativeProfileInterval)
 		}()
 
 		readErr := cmdloop.Run(sessCtx, opts.Logger, conn)
@@ -229,6 +236,9 @@ func buildTelemetryWireMessage() ([]byte, error) {
 		RootDiskTotalBytes: snap.RootDiskTotalBytes,
 		RootDiskUsedBytes:  snap.RootDiskUsedBytes,
 		InstalledSoftware:  sw,
+	}
+	if enf := telemetryMDMPolicyEnforcementWire(); enf != nil {
+		payload.MDMPolicyEnforcement = enf
 	}
 	wire := struct {
 		Type          string `json:"type"`

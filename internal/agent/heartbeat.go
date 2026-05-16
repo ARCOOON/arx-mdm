@@ -105,6 +105,7 @@ func RunHeartbeat(ctx context.Context, logger *slog.Logger, opts HeartbeatOption
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("agent: telemetry failed: status=%d body=%s", resp.StatusCode, truncateForLog(respBody))
 		}
+		ApplyMDMTelemetryAck(logger, respBody)
 		return nil
 	}
 

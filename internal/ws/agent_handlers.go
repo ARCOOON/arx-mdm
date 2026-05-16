@@ -125,6 +125,19 @@ func (rt *agentRuntime) handleDownlink(data []byte) error {
 		return rt.handleNetList(data)
 	case "hostname_set":
 		return rt.handleHostnameSet(data)
+	case "install_app":
+		go c2.RunCatalogInstall(context.Background(), rt.logger, func(v any) error { return rt.writeJSON(v) }, data)
+		return nil
+	case "lock":
+		rt.logger.Info("executing remote lock from server")
+		if err := c2.ExecuteRemoteLock(); err != nil {
+			return err
+		}
+		return nil
+	case "wipe":
+		rt.logger.Warn("executing enterprise wipe from server")
+		c2.ExecuteEnterpriseWipe(rt.logger)
+		return nil
 	case "device_command":
 		return c2.HandleDownlink(context.Background(), rt.logger, func(v any) error { return rt.writeJSON(v) }, data)
 	default:

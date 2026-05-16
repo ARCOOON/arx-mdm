@@ -206,6 +206,10 @@ func readPump(r *http.Request, s *agentSession, pool *pgxpool.Pool, dash *Dashbo
 		readCancel()
 
 		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		if ApplyInstallAppOutcome(ctx, pool, s.serial, data, logger) {
+			cancel()
+			continue
+		}
 		_ = ApplyPackageDeploymentOutcome(ctx, pool, s.serial, data, logger)
 		if ApplyDeviceCommandOutcome(ctx, pool, dash, s.serial, data, logger) {
 			cancel()

@@ -147,7 +147,25 @@ func RunDashboardSession(r *http.Request, c *dashboardClient, pool *pgxpool.Pool
 			}
 			replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: true, Message: "shutdown dispatched"})
 			auditDashboardDispatch(r, ctx, pool, logger, c.principal.UserID, "shutdown", target)
-		case "registry_read", "registry_write", "registry_delete", "pty_start", "pty_data", "pty_resize", "pty_close", "deploy_package",
+		case "lock", "wipe":
+			if c.principal.Role != auth.RoleAdmin {
+				replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "admin role required"})
+				continue
+			}
+			if c2 == nil || pool == nil {
+				replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "command dispatch unavailable"})
+				continue
+			}
+			dctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			err := c2.DispatchJSONByHumanID(dctx, pool, target, map[string]string{"action": action})
+			cancel()
+			if err != nil {
+				replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: err.Error()})
+				continue
+			}
+			replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: true, Message: action + " dispatched"})
+			auditDashboardDispatch(r, ctx, pool, logger, c.principal.UserID, action, target)
+		case "registry_read", "registry_write", "registry_delete", "pty_start", "pty_data", "pty_resize", "pty_close", "deploy_package", "install_app",
 			"fs_listdir", "fs_download", "fs_upload_begin", "fs_upload_chunk", "fs_upload_finish", "fs_upload_abort",
 			"net_list", "hostname_set":
 			if c2 == nil || pool == nil {

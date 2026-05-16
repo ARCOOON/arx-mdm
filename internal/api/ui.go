@@ -1,17 +1,27 @@
-package serverinstall
+package api
 
 import (
 	"errors"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"strings"
 )
 
-func newDashboardHandler() (http.Handler, error) {
-	root, err := dashboardRootFS()
+// RegisterEmbeddedStaticUI serves the embedded React production bundle at the URL root.
+// Unknown GET paths fall back to index.html so React Router client-side routes work.
+func RegisterEmbeddedStaticUI(mux *http.ServeMux, logger *slog.Logger) {
+	root, err := embeddedStaticAssetsFS()
 	if err != nil {
-		return nil, err
+		if logger != nil {
+			logger.Error("embedded static UI filesystem init failed", "err", err)
+		}
+		return
 	}
+	mux.Handle("GET /{path...}", newEmbeddedStaticHandler(root))
+}
+
+func newEmbeddedStaticHandler(root fs.FS) http.Handler {
 	fileServer := http.FileServer(http.FS(root))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -36,5 +46,5 @@ func newDashboardHandler() (http.Handler, error) {
 			}
 		}
 		fileServer.ServeHTTP(w, r)
-	}), nil
+	})
 }

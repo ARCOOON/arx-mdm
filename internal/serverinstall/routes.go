@@ -2,7 +2,6 @@ package serverinstall
 
 import (
 	_ "embed"
-	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -13,8 +12,8 @@ var linuxInstallScript []byte
 //go:embed install_windows.ps1
 var windowsInstallScript []byte
 
-// Register adds public install script/binary routes and the dashboard static SPA.
-func Register(mux *http.ServeMux, logger *slog.Logger) {
+// Register adds public install script/binary download routes.
+func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/install/linux", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/x-shellscript; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
@@ -51,12 +50,4 @@ func Register(mux *http.ServeMux, logger *slog.Logger) {
 		_, _ = w.Write(b)
 	})
 
-	dash, err := newDashboardHandler()
-	if err != nil {
-		if logger != nil {
-			logger.Error("dashboard static handler init failed", "err", err)
-		}
-		return
-	}
-	mux.Handle("GET /{path...}", dash)
 }

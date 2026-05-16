@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ARX MDM</title>
+  </head>
+  <body>
+    <p>
+      The production dashboard bundle is not embedded. Run <code>make build-server</code>, which builds
+      <code>web/</code>, copies assets into <code>internal/api/webui/dist</code> (required because Go embed patterns cannot point outside the package directory), and compiles with <code>-tags embedui</code>.
+      Alternatively, build the unified Docker image, which runs the Vite production build and copies output into that path before compiling the server.
+    </p>
+  </body>
+</html>

@@ -118,7 +118,7 @@ func handleAndroidEnrollmentQR(d EnrollAndroidDeps) http.HandlerFunc {
 			writeTicketsError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
-		if _, ok := d.Auth.RequireMinRole(w, r, "operator"); !ok {
+		if _, ok := d.Auth.RequireMinRole(w, r, auth.RoleOperator); !ok {
 			return
 		}
 		body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))

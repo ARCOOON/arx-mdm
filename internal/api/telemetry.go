@@ -27,19 +27,21 @@ type TelemetryInstalledApp struct {
 
 // TelemetryPayload is the JSON body sent by the agent for heartbeat/telemetry.
 type TelemetryPayload struct {
-	Hostname          string                  `json:"hostname"`
-	OsType            string                  `json:"os_type,omitempty"`
-	OSFamily          string                  `json:"os_family"`
-	OSVersion         string                  `json:"os_version"`
-	TotalRAMBytes     uint64                  `json:"total_ram_bytes"`
-	CPUModel          string                  `json:"cpu_model"`
-	CPULogicalCores   int                     `json:"cpu_logical_cores"`
-	CPUUsagePercent   float64                 `json:"cpu_usage_percent,omitempty"`
-	MemoryUsedBytes   uint64                  `json:"memory_used_bytes,omitempty"`
-	BatteryPercent    float64                 `json:"battery_percent,omitempty"`
-	DeviceModel       string                  `json:"device_model,omitempty"`
-	MACAddress        string                  `json:"mac_address,omitempty"`
-	InstalledSoftware []TelemetryInstalledApp `json:"installed_software"`
+	Hostname           string                  `json:"hostname"`
+	OsType             string                  `json:"os_type,omitempty"`
+	OSFamily           string                  `json:"os_family"`
+	OSVersion          string                  `json:"os_version"`
+	TotalRAMBytes      uint64                  `json:"total_ram_bytes"`
+	CPUModel           string                  `json:"cpu_model"`
+	CPULogicalCores    int                     `json:"cpu_logical_cores"`
+	CPUUsagePercent    float64                 `json:"cpu_usage_percent,omitempty"`
+	MemoryUsedBytes    uint64                  `json:"memory_used_bytes,omitempty"`
+	RootDiskTotalBytes uint64                  `json:"root_disk_total_bytes,omitempty"`
+	RootDiskUsedBytes  uint64                  `json:"root_disk_used_bytes,omitempty"`
+	BatteryPercent     float64                 `json:"battery_percent,omitempty"`
+	DeviceModel        string                  `json:"device_model,omitempty"`
+	MACAddress         string                  `json:"mac_address,omitempty"`
+	InstalledSoftware  []TelemetryInstalledApp `json:"installed_software"`
 }
 
 // TelemetryDeps carries dependencies for the telemetry HTTP handler.

@@ -3,21 +3,19 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ARCOOON/arx-mdm/internal/auth"
-	"github.com/ARCOOON/arx-mdm/internal/models"
+	"github.com/ARCOOON/arx-mdm/internal/database"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// AuditDeps wires GET /v1/audit (admin-only).
+// AuditDeps wires audit log listing (admin-only).
 type AuditDeps struct {
 	Pool   *pgxpool.Pool
 	Logger *slog.Logger
@@ -30,8 +28,11 @@ type auditListItem struct {
 	UserID          *uuid.UUID      `json:"user_id,omitempty"`
 	Username        *string         `json:"username,omitempty"`
 	Action          string          `json:"action"`
+	ResourceType    string          `json:"resource_type,omitempty"`
+	ResourceID      *uuid.UUID      `json:"resource_id,omitempty"`
 	TargetAssetID   *uuid.UUID      `json:"target_asset_id,omitempty"`
 	TargetHumanID   *string         `json:"target_human_id,omitempty"`
+	IPAddress       *string         `json:"ip_address,omitempty"`
 	Details         json.RawMessage `json:"details,omitempty"`
 }
 
@@ -40,13 +41,14 @@ type auditListResponse struct {
 	Total int64           `json:"total"`
 }
 
-// RegisterAuditRoutes registers GET /v1/audit with pagination and filters.
+// RegisterAuditRoutes registers GET /v1/audit and GET /v1/audit-logs (admin-only, same handler).
 func RegisterAuditRoutes(mux *http.ServeMux, d AuditDeps) {
 	if d.Pool == nil || d.Logger == nil || d.Auth.JWT == nil {
 		panic("api: audit routes require Pool, Logger, and Auth.JWT")
 	}
 	h := &auditHandler{deps: d}
 	mux.HandleFunc("GET /v1/audit", h.handleList)
+	mux.HandleFunc("GET /v1/audit-logs", h.handleList)
 }
 
 type auditHandler struct {
@@ -64,13 +66,13 @@ func (h *auditHandler) handleList(w http.ResponseWriter, r *http.Request) {
 
 	limit := int64(50)
 	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
-		if n, err := parseAuditLimitOffset(v, 200); err == nil {
+		if n, err := database.ParseAuditLimit(v, 200); err == nil {
 			limit = n
 		}
 	}
 	offset := int64(0)
 	if v := strings.TrimSpace(r.URL.Query().Get("offset")); v != "" {
-		if n, err := parseAuditLimitOffset(v, 1<<30); err == nil {
+		if n, err := database.ParseAuditLimit(v, 1<<30); err == nil {
 			offset = n
 		}
 	}
@@ -83,6 +85,14 @@ func (h *auditHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	actionSub := strings.TrimSpace(r.URL.Query().Get("action"))
+	resourceType := strings.TrimSpace(r.URL.Query().Get("resource_type"))
+	sortDesc := true
+	if v := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("sort"))); v == "asc" || v == "created_at_asc" {
+		sortDesc = false
+	}
+	if v := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("order"))); v == "asc" {
+		sortDesc = false
+	}
 
 	var fromTS, toTS *time.Time
 	if v := strings.TrimSpace(r.URL.Query().Get("from")); v != "" {
@@ -100,51 +110,75 @@ func (h *auditHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	countArgs := []any{filterUserID, actionSub, fromTS, toTS}
-	var total int64
-	err := h.deps.Pool.QueryRow(ctx, `
-SELECT COUNT(*)
-FROM audit_logs a
-WHERE ($1::uuid IS NULL OR a.user_id = $1)
-  AND ($2::text = '' OR a.action ILIKE '%' || $2 || '%')
-  AND ($3::timestamptz IS NULL OR a.logged_at >= $3)
-  AND ($4::timestamptz IS NULL OR a.logged_at < $4)
-`, countArgs...).Scan(&total)
+	f := database.AuditLogFilter{
+		UserID:       filterUserID,
+		ActionSubstr: actionSub,
+		ResourceType: resourceType,
+		SortDesc:     sortDesc,
+		FromTS:       fromTS,
+		ToTS:         toTS,
+		Limit:        limit,
+		Offset:       offset,
+	}
+	total, err := database.CountAuditLogs(ctx, h.deps.Pool, f)
 	if err != nil {
 		h.deps.Logger.Error("audit list count", "err", err)
 		writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
 		return
 	}
-
-	qArgs := []any{filterUserID, actionSub, fromTS, toTS, limit, offset}
-	rows, err := h.deps.Pool.Query(ctx, `
-SELECT a.id, a.logged_at, a.user_id, u.username, a.action, a.target_asset_id, ast.human_id, a.details_json
-FROM audit_logs a
-LEFT JOIN users u ON u.id = a.user_id
-LEFT JOIN assets ast ON ast.id = a.target_asset_id
-WHERE ($1::uuid IS NULL OR a.user_id = $1)
-  AND ($2::text = '' OR a.action ILIKE '%' || $2 || '%')
-  AND ($3::timestamptz IS NULL OR a.logged_at >= $3)
-  AND ($4::timestamptz IS NULL OR a.logged_at < $4)
-ORDER BY a.logged_at DESC
-LIMIT $5 OFFSET $6
-`, qArgs...)
+	rows, err := database.ListAuditLogs(ctx, h.deps.Pool, f)
 	if err != nil {
 		h.deps.Logger.Error("audit list query", "err", err)
 		writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
 		return
 	}
-	defer rows.Close()
 
-	var items []auditListItem
-	for rows.Next() {
-		var row models.AuditLog
+	userIDs := make([]uuid.UUID, 0, len(rows))
+	seenU := map[uuid.UUID]struct{}{}
+	assetIDs := make([]uuid.UUID, 0, len(rows))
+	seenA := map[uuid.UUID]struct{}{}
+	for _, row := range rows {
+		if row.UserID != nil {
+			if _, ok := seenU[*row.UserID]; !ok {
+				seenU[*row.UserID] = struct{}{}
+				userIDs = append(userIDs, *row.UserID)
+			}
+		}
+		if row.TargetAssetID != nil {
+			if _, ok := seenA[*row.TargetAssetID]; !ok {
+				seenA[*row.TargetAssetID] = struct{}{}
+				assetIDs = append(assetIDs, *row.TargetAssetID)
+			}
+		}
+	}
+	unames, err := database.AuditLogUsernames(ctx, h.deps.Pool, userIDs)
+	if err != nil {
+		h.deps.Logger.Error("audit usernames", "err", err)
+		writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
+		return
+	}
+	humans, err := database.AuditLogHumanIDs(ctx, h.deps.Pool, assetIDs)
+	if err != nil {
+		h.deps.Logger.Error("audit human ids", "err", err)
+		writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
+		return
+	}
+
+	items := make([]auditListItem, 0, len(rows))
+	for _, row := range rows {
 		var username *string
+		if row.UserID != nil {
+			if n, ok := unames[*row.UserID]; ok && n != "" {
+				u := n
+				username = &u
+			}
+		}
 		var humanID *string
-		if err := rows.Scan(&row.ID, &row.LoggedAt, &row.UserID, &username, &row.Action, &row.TargetAssetID, &humanID, &row.DetailsJSON); err != nil {
-			h.deps.Logger.Error("audit list scan", "err", err)
-			writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
-			return
+		if row.TargetAssetID != nil {
+			if hID, ok := humans[*row.TargetAssetID]; ok && hID != "" {
+				hi := hID
+				humanID = &hi
+			}
 		}
 		var details json.RawMessage
 		if len(row.DetailsJSON) > 0 {
@@ -152,33 +186,20 @@ LIMIT $5 OFFSET $6
 		}
 		items = append(items, auditListItem{
 			ID:            row.ID,
-			Timestamp:     row.LoggedAt,
+			Timestamp:     row.CreatedAt,
 			UserID:        row.UserID,
 			Username:      username,
 			Action:        row.Action,
+			ResourceType:  row.ResourceType,
+			ResourceID:    row.ResourceID,
 			TargetAssetID: row.TargetAssetID,
 			TargetHumanID: humanID,
+			IPAddress:     row.IPAddress,
 			Details:       details,
 		})
-	}
-	if err := rows.Err(); err != nil {
-		h.deps.Logger.Error("audit list rows", "err", err)
-		writeTicketsError(w, http.StatusInternalServerError, "failed to list audit logs")
-		return
 	}
 	if items == nil {
 		items = []auditListItem{}
 	}
 	writeTicketsJSON(w, http.StatusOK, auditListResponse{Items: items, Total: total})
-}
-
-func parseAuditLimitOffset(s string, max int64) (int64, error) {
-	n, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
-	if err != nil || n <= 0 {
-		return 0, errors.New("invalid")
-	}
-	if n > max {
-		return max, nil
-	}
-	return n, nil
 }

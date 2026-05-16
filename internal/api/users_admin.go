@@ -50,6 +50,7 @@ func RegisterUsersAdminRoutes(mux *http.ServeMux, d UsersAdminDeps) {
 	}
 	h := &usersAdminHandler{deps: d}
 	mux.HandleFunc("GET /v1/users", h.handleList)
+	mux.HandleFunc("GET /v1/users/directory", h.handleDirectory)
 	mux.HandleFunc("POST /v1/users", h.handleCreate)
 	mux.HandleFunc("PATCH /v1/users/{id}", h.handlePatch)
 	mux.HandleFunc("DELETE /v1/users/{id}", h.handleDelete)
@@ -97,6 +98,50 @@ SELECT id, username, role, created_at FROM users ORDER BY username ASC
 	}
 	if out == nil {
 		out = []userAdminWire{}
+	}
+	writeTicketsJSON(w, http.StatusOK, out)
+}
+
+type userDirectoryRow struct {
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+}
+
+// handleDirectory returns id and username for every dashboard account (operators use this for assignments).
+func (h *usersAdminHandler) handleDirectory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeTicketsError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	if _, ok := h.deps.Auth.RequireMinRole(w, r, auth.RoleOperator); !ok {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	rows, err := h.deps.Pool.Query(ctx, `SELECT id, username FROM users ORDER BY username ASC`)
+	if err != nil {
+		h.deps.Logger.Error("list user directory", "err", err)
+		writeTicketsError(w, http.StatusInternalServerError, "failed to list users")
+		return
+	}
+	defer rows.Close()
+
+	var out []userDirectoryRow
+	for rows.Next() {
+		var u userDirectoryRow
+		if err := rows.Scan(&u.ID, &u.Username); err != nil {
+			writeTicketsError(w, http.StatusInternalServerError, "failed to list users")
+			return
+		}
+		out = append(out, u)
+	}
+	if err := rows.Err(); err != nil {
+		writeTicketsError(w, http.StatusInternalServerError, "failed to list users")
+		return
+	}
+	if out == nil {
+		out = []userDirectoryRow{}
 	}
 	writeTicketsJSON(w, http.StatusOK, out)
 }

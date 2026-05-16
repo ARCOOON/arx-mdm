@@ -126,7 +126,14 @@ func (h *authHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	actx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	if err := auth.InsertAuditLog(actx, h.deps.Pool, id, "auth.login", nil, map[string]any{"username": req.Username}); err != nil {
+	if err := auth.InsertAuditRecord(actx, h.deps.Pool, auth.AuditRecord{
+		UserID:       id,
+		Action:       "auth.login",
+		ResourceType: "user",
+		ResourceID:   &id,
+		Details:      map[string]any{"username": req.Username},
+		IPAddress:    auth.ClientIP(r),
+	}); err != nil {
 		h.deps.Logger.Debug("audit login log failed", "err", err)
 	}
 }

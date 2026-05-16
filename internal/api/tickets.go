@@ -48,9 +48,9 @@ func writeTicketsError(w http.ResponseWriter, status int, msg string) {
 
 var (
 	allowedTicketKinds    = map[string]string{"INC": "INC", "REQ": "REQ", "CHG": "CHG", "PRJ": "PRJ"}
-	allowedTicketPriority = map[string]struct{}{"critical": {}, "high": {}, "normal": {}, "low": {}}
+	allowedTicketPriority = map[string]struct{}{"critical": {}, "high": {}, "medium": {}, "low": {}}
 	allowedTicketStatus   = map[string]struct{}{
-		"open": {}, "in_progress": {}, "pending": {}, "resolved": {}, "closed": {},
+		"open": {}, "in_progress": {}, "resolved": {}, "closed": {},
 	}
 )
 
@@ -64,15 +64,20 @@ func ticketSequenceName(kind string) (string, error) {
 
 // TicketListRow is returned by GET /v1/tickets.
 type TicketListRow struct {
-	ID          uuid.UUID  `json:"id"`
-	TicketRef   string     `json:"ticket_ref"`
-	Title       string     `json:"title"`
-	Status      string     `json:"status"`
-	Priority    string     `json:"priority"`
-	LinkedArxID *string    `json:"linked_arx_id,omitempty"`
-	AssetID     *uuid.UUID `json:"asset_id,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID                    uuid.UUID   `json:"id"`
+	TicketRef             string      `json:"ticket_ref"`
+	Title                 string      `json:"title"`
+	Description           string      `json:"description"`
+	Status                string      `json:"status"`
+	Priority              string      `json:"priority"`
+	LinkedArxID           *string     `json:"linked_arx_id,omitempty"`
+	DeviceID              *uuid.UUID  `json:"device_id,omitempty"`
+	CreatedAt             time.Time   `json:"created_at"`
+	UpdatedAt             time.Time   `json:"updated_at"`
+	CreatedByUserID       *uuid.UUID  `json:"created_by,omitempty"`
+	CreatedByUsername     *string     `json:"created_by_username,omitempty"`
+	AssignedToUserID      *uuid.UUID  `json:"assigned_to,omitempty"`
+	AssignedToUsername    *string     `json:"assigned_to_username,omitempty"`
 }
 
 // TicketDetailResponse is returned by GET /v1/tickets/{id}.
@@ -82,18 +87,23 @@ type TicketDetailResponse struct {
 }
 
 type createTicketRequest struct {
-	Kind               string `json:"kind"`
-	Title              string `json:"title"`
-	Status             string `json:"status"`
-	Priority           string `json:"priority"`
-	LinkedAssetHumanID string `json:"linked_asset_human_id"`
+	Kind                 string `json:"kind"`
+	Title                string `json:"title"`
+	Description          string `json:"description"`
+	Status               string `json:"status"`
+	Priority             string `json:"priority"`
+	LinkedAssetHumanID   string `json:"linked_asset_human_id"`
+	AssignedToUserID     string `json:"assigned_to_user_id"`
 }
 
 type patchTicketRequest struct {
-	Title              *string `json:"title"`
-	Status             *string `json:"status"`
-	Priority           *string `json:"priority"`
-	LinkedAssetHumanID *string `json:"linked_asset_human_id"`
+	Title                *string `json:"title"`
+	Description          *string `json:"description"`
+	Status               *string `json:"status"`
+	Priority             *string `json:"priority"`
+	LinkedAssetHumanID   *string `json:"linked_asset_human_id"`
+	AssignedToUserID     *string `json:"assigned_to_user_id"`
+	ClearAssignedTo      *bool   `json:"clear_assigned_to"`
 }
 
 type createResolutionRequest struct {
@@ -104,7 +114,7 @@ type createResolutionRequest struct {
 func normalizePriority(p string) string {
 	p = strings.ToLower(strings.TrimSpace(p))
 	if p == "" {
-		return "normal"
+		return "medium"
 	}
 	return p
 }
@@ -127,6 +137,13 @@ func validateStatus(s string) bool {
 	return ok
 }
 
+func pointerStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
 // NewTicketsHandler registers dashboard-authenticated ticket CRUD on the given mux.
 func NewTicketsHandler(mux *http.ServeMux, d TicketsDeps) {
 	if d.Pool == nil || d.Logger == nil || d.Auth.JWT == nil {
@@ -137,6 +154,7 @@ func NewTicketsHandler(mux *http.ServeMux, d TicketsDeps) {
 	mux.HandleFunc("POST /v1/tickets", h.handleCreate)
 	mux.HandleFunc("GET /v1/tickets/{id}", h.handleGet)
 	mux.HandleFunc("PATCH /v1/tickets/{id}", h.handlePatch)
+	mux.HandleFunc("DELETE /v1/tickets/{id}", h.handleDelete)
 	mux.HandleFunc("POST /v1/tickets/{id}/resolutions", h.handlePostResolution)
 }
 
@@ -177,13 +195,29 @@ func (h *ticketsHandler) handleList(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
+	var deviceArg any
+	filterDevice := strings.TrimSpace(r.URL.Query().Get("device_id"))
+	if filterDevice != "" {
+		id, err := uuid.Parse(filterDevice)
+		if err != nil {
+			writeTicketsError(w, http.StatusBadRequest, "invalid device_id query parameter")
+			return
+		}
+		deviceArg = id
+	}
+
 	rows, err := h.deps.Pool.Query(ctx, `
-SELECT t.id, t.ticket_ref, t.title, t.status, t.priority, t.asset_id, t.created_at, t.updated_at, a.human_id
+SELECT t.id, t.ticket_ref, t.title, t.description, t.status, t.priority, t.device_id, t.created_at, t.updated_at, a.human_id,
+       t.created_by, cb.username,
+       t.assigned_to, ab.username
 FROM tickets t
-LEFT JOIN assets a ON a.id = t.asset_id
+LEFT JOIN assets a ON a.id = t.device_id
+LEFT JOIN users cb ON cb.id = t.created_by
+LEFT JOIN users ab ON ab.id = t.assigned_to
+WHERE ($1::uuid IS NULL OR t.device_id = $1)
 ORDER BY t.created_at DESC
 LIMIT 1000
-`)
+`, deviceArg)
 	if err != nil {
 		h.deps.Logger.Error("list tickets", "err", err, "request_id", r.Header.Get("X-Request-Id"))
 		writeTicketsError(w, http.StatusInternalServerError, "failed to list tickets")
@@ -195,9 +229,16 @@ LIMIT 1000
 	for rows.Next() {
 		var row TicketListRow
 		var humanID *string
+		var createdBy *uuid.UUID
+		var createdByName *string
+		var assignedTo *uuid.UUID
+		var assignedToName *string
 		if err := rows.Scan(
-			&row.ID, &row.TicketRef, &row.Title, &row.Status, &row.Priority, &row.AssetID,
+			&row.ID, &row.TicketRef, &row.Title, &row.Description, &row.Status, &row.Priority,
+			&row.DeviceID,
 			&row.CreatedAt, &row.UpdatedAt, &humanID,
+			&createdBy, &createdByName,
+			&assignedTo, &assignedToName,
 		); err != nil {
 			h.deps.Logger.Error("scan ticket row", "err", err, "request_id", r.Header.Get("X-Request-Id"))
 			writeTicketsError(w, http.StatusInternalServerError, "failed to list tickets")
@@ -205,6 +246,18 @@ LIMIT 1000
 		}
 		if humanID != nil && *humanID != "" {
 			row.LinkedArxID = humanID
+		}
+		if createdBy != nil {
+			row.CreatedByUserID = createdBy
+			if createdByName != nil && *createdByName != "" {
+				row.CreatedByUsername = createdByName
+			}
+		}
+		if assignedTo != nil {
+			row.AssignedToUserID = assignedTo
+			if assignedToName != nil && *assignedToName != "" {
+				row.AssignedToUsername = assignedToName
+			}
 		}
 		out = append(out, row)
 	}
@@ -224,7 +277,8 @@ func (h *ticketsHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		writeTicketsError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	if !h.authorizeOperator(w, r) {
+	p, ok := h.deps.Auth.RequireMinRole(w, r, auth.RoleOperator)
+	if !ok {
 		return
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxTicketJSONBody))
@@ -243,6 +297,10 @@ func (h *ticketsHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	req.Title = strings.TrimSpace(req.Title)
 	if req.Title == "" {
 		writeTicketsError(w, http.StatusBadRequest, "title is required")
+		return
+	}
+	if utf8.RuneCountInString(req.Description) > 64_000 {
+		writeTicketsError(w, http.StatusBadRequest, "description too large")
 		return
 	}
 	kind, ok := allowedTicketKinds[strings.ToUpper(strings.TrimSpace(req.Kind))]
@@ -287,7 +345,7 @@ func (h *ticketsHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	ticketRef := fmt.Sprintf("%s-%05d", kind, seq)
 
-	var assetID *uuid.UUID
+	var deviceID *uuid.UUID
 	hid := strings.TrimSpace(req.LinkedAssetHumanID)
 	if hid != "" {
 		var aid uuid.UUID
@@ -301,15 +359,36 @@ func (h *ticketsHandler) handleCreate(w http.ResponseWriter, r *http.Request) {
 			writeTicketsError(w, http.StatusInternalServerError, "failed to resolve asset")
 			return
 		}
-		assetID = &aid
+		deviceID = &aid
+	}
+
+	var assignedTo *uuid.UUID
+	au := strings.TrimSpace(req.AssignedToUserID)
+	if au != "" {
+		assignID, err := uuid.Parse(au)
+		if err != nil {
+			writeTicketsError(w, http.StatusBadRequest, "invalid assigned_to_user_id")
+			return
+		}
+		var exists bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, assignID).Scan(&exists); err != nil {
+			h.deps.Logger.Error("assignee lookup", "err", err, "request_id", r.Header.Get("X-Request-Id"))
+			writeTicketsError(w, http.StatusInternalServerError, "failed to validate assignee")
+			return
+		}
+		if !exists {
+			writeTicketsError(w, http.StatusBadRequest, "assigned_to_user_id not found")
+			return
+		}
+		assignedTo = &assignID
 	}
 
 	var newID uuid.UUID
 	err = tx.QueryRow(ctx, `
-INSERT INTO tickets (ticket_ref, title, status, priority, asset_id)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO tickets (ticket_ref, title, description, status, priority, device_id, created_by, assigned_to)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
-`, ticketRef, req.Title, st, pr, assetID).Scan(&newID)
+`, ticketRef, req.Title, req.Description, st, pr, deviceID, p.UserID, assignedTo).Scan(&newID)
 	if err != nil {
 		h.deps.Logger.Error("insert ticket", "err", err, "request_id", r.Header.Get("X-Request-Id"))
 		writeTicketsError(w, http.StatusInternalServerError, "failed to create ticket")
@@ -331,7 +410,7 @@ RETURNING id
 					h.deps.Logger.Error("OnINCTicketCreated panicked", "recover", rec)
 				}
 			}()
-			h.deps.OnINCTicketCreated(evCtx, ticketRef, req.Title, assetID)
+			h.deps.OnINCTicketCreated(evCtx, ticketRef, req.Title, deviceID)
 		}()
 	}
 	writeTicketsJSON(w, http.StatusCreated, map[string]any{
@@ -351,21 +430,43 @@ func parseTicketUUID(r *http.Request) (uuid.UUID, error) {
 func (h *ticketsHandler) loadTicketDetail(ctx context.Context, id uuid.UUID) (TicketDetailResponse, error) {
 	var out TicketDetailResponse
 	row := h.deps.Pool.QueryRow(ctx, `
-SELECT t.id, t.ticket_ref, t.title, t.status, t.priority, t.asset_id, t.created_at, t.updated_at, a.human_id
+SELECT t.id, t.ticket_ref, t.title, t.description, t.status, t.priority, t.device_id, t.created_at, t.updated_at, a.human_id,
+       t.created_by, cb.username,
+       t.assigned_to, ab.username
 FROM tickets t
-LEFT JOIN assets a ON a.id = t.asset_id
+LEFT JOIN assets a ON a.id = t.device_id
+LEFT JOIN users cb ON cb.id = t.created_by
+LEFT JOIN users ab ON ab.id = t.assigned_to
 WHERE t.id = $1
 `, id)
 	var humanID *string
+	var createdBy *uuid.UUID
+	var createdByName *string
+	var assignedTo *uuid.UUID
+	var assignedToName *string
 	err := row.Scan(
-		&out.Ticket.ID, &out.Ticket.TicketRef, &out.Ticket.Title, &out.Ticket.Status, &out.Ticket.Priority,
-		&out.Ticket.AssetID, &out.Ticket.CreatedAt, &out.Ticket.UpdatedAt, &humanID,
+		&out.Ticket.ID, &out.Ticket.TicketRef, &out.Ticket.Title, &out.Ticket.Description, &out.Ticket.Status, &out.Ticket.Priority,
+		&out.Ticket.DeviceID, &out.Ticket.CreatedAt, &out.Ticket.UpdatedAt, &humanID,
+		&createdBy, &createdByName,
+		&assignedTo, &assignedToName,
 	)
 	if err != nil {
 		return out, err
 	}
 	if humanID != nil && *humanID != "" {
 		out.Ticket.LinkedArxID = humanID
+	}
+	if createdBy != nil {
+		out.Ticket.CreatedByUserID = createdBy
+		if createdByName != nil && *createdByName != "" {
+			out.Ticket.CreatedByUsername = createdByName
+		}
+	}
+	if assignedTo != nil {
+		out.Ticket.AssignedToUserID = assignedTo
+		if assignedToName != nil && *assignedToName != "" {
+			out.Ticket.AssignedToUsername = assignedToName
+		}
 	}
 
 	rrows, err := h.deps.Pool.Query(ctx, `
@@ -445,7 +546,8 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 		writeTicketsError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if req.Title == nil && req.Status == nil && req.Priority == nil && req.LinkedAssetHumanID == nil {
+	if req.Title == nil && req.Description == nil && req.Status == nil && req.Priority == nil &&
+		req.LinkedAssetHumanID == nil && req.AssignedToUserID == nil && req.ClearAssignedTo == nil {
 		writeTicketsError(w, http.StatusBadRequest, "no fields to update")
 		return
 	}
@@ -455,6 +557,14 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 			writeTicketsError(w, http.StatusBadRequest, "title cannot be empty")
 			return
 		}
+	}
+	if req.Description != nil && utf8.RuneCountInString(*req.Description) > 64_000 {
+		writeTicketsError(w, http.StatusBadRequest, "description too large")
+		return
+	}
+	if req.ClearAssignedTo != nil && *req.ClearAssignedTo && strings.TrimSpace(pointerStr(req.AssignedToUserID)) != "" {
+		writeTicketsError(w, http.StatusBadRequest, "clear_assigned_to conflicts with assigned_to_user_id")
+		return
 	}
 	if req.Status != nil {
 		s := normalizeStatus(*req.Status)
@@ -492,6 +602,11 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 		args = append(args, *req.Title)
 		argPos++
 	}
+	if req.Description != nil {
+		setParts = append(setParts, fmt.Sprintf("description = $%d", argPos))
+		args = append(args, *req.Description)
+		argPos++
+	}
 	if req.Status != nil {
 		setParts = append(setParts, fmt.Sprintf("status = $%d", argPos))
 		args = append(args, *req.Status)
@@ -505,10 +620,10 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 	if req.LinkedAssetHumanID != nil {
 		hv := strings.TrimSpace(*req.LinkedAssetHumanID)
 		if hv == "" {
-			setParts = append(setParts, "asset_id = NULL")
+			setParts = append(setParts, "device_id = NULL")
 		} else {
-			var aid uuid.UUID
-			err := tx.QueryRow(ctx, `SELECT id FROM assets WHERE human_id = $1`, hv).Scan(&aid)
+			var did uuid.UUID
+			err := tx.QueryRow(ctx, `SELECT id FROM assets WHERE human_id = $1`, hv).Scan(&did)
 			if errors.Is(err, pgx.ErrNoRows) {
 				writeTicketsError(w, http.StatusBadRequest, "linked_asset_human_id not found")
 				return
@@ -518,10 +633,42 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 				writeTicketsError(w, http.StatusInternalServerError, "failed to resolve asset")
 				return
 			}
-			setParts = append(setParts, fmt.Sprintf("asset_id = $%d", argPos))
-			args = append(args, aid)
+			setParts = append(setParts, fmt.Sprintf("device_id = $%d", argPos))
+			args = append(args, did)
 			argPos++
 		}
+	}
+	if req.ClearAssignedTo != nil && *req.ClearAssignedTo {
+		setParts = append(setParts, "assigned_to = NULL")
+	} else if req.AssignedToUserID != nil {
+		atu := strings.TrimSpace(*req.AssignedToUserID)
+		if atu == "" {
+			setParts = append(setParts, "assigned_to = NULL")
+		} else {
+			assignID, err := uuid.Parse(atu)
+			if err != nil {
+				writeTicketsError(w, http.StatusBadRequest, "invalid assigned_to_user_id")
+				return
+			}
+			var exists bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, assignID).Scan(&exists); err != nil {
+				h.deps.Logger.Error("patch assignee lookup", "err", err, "request_id", r.Header.Get("X-Request-Id"))
+				writeTicketsError(w, http.StatusInternalServerError, "failed to validate assignee")
+				return
+			}
+			if !exists {
+				writeTicketsError(w, http.StatusBadRequest, "assigned_to_user_id not found")
+				return
+			}
+			setParts = append(setParts, fmt.Sprintf("assigned_to = $%d", argPos))
+			args = append(args, assignID)
+			argPos++
+		}
+	}
+
+	if len(setParts) == 0 {
+		writeTicketsError(w, http.StatusBadRequest, "no fields to update")
+		return
 	}
 
 	setParts = append(setParts, "updated_at = now()")
@@ -551,6 +698,36 @@ func (h *ticketsHandler) handlePatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeTicketsJSON(w, http.StatusOK, detail)
+}
+
+func (h *ticketsHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		writeTicketsError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	if !h.authorizeOperator(w, r) {
+		return
+	}
+	id, err := parseTicketUUID(r)
+	if err != nil {
+		writeTicketsError(w, http.StatusBadRequest, "invalid ticket id")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	tag, err := h.deps.Pool.Exec(ctx, `DELETE FROM tickets WHERE id = $1`, id)
+	if err != nil {
+		h.deps.Logger.Error("delete ticket", "err", err, "request_id", r.Header.Get("X-Request-Id"))
+		writeTicketsError(w, http.StatusInternalServerError, "failed to delete ticket")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeTicketsError(w, http.StatusNotFound, "ticket not found")
+		return
+	}
+	h.notifyMutated()
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *ticketsHandler) handlePostResolution(w http.ResponseWriter, r *http.Request) {

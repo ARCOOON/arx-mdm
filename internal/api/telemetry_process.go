@@ -3,7 +3,10 @@ package api
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
+
+	"github.com/ARCOOON/arx-mdm/internal/database"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -48,6 +51,21 @@ func ProcessTelemetry(ctx context.Context, d TelemetryProcessDeps, certSerial st
 	assetID, humanID, err := upsertAssetFromTelemetry(ctx, d.Pool, lockKey, certSerial, payload, osType)
 	if err != nil {
 		return zero, err
+	}
+
+	u64ToMetricInt64 := func(u uint64) int64 {
+		if u > uint64(math.MaxInt64) {
+			return math.MaxInt64
+		}
+		return int64(u)
+	}
+	if err := database.InsertDeviceMetric(ctx, d.Pool, assetID, payload.CPUUsagePercent,
+		u64ToMetricInt64(payload.TotalRAMBytes),
+		u64ToMetricInt64(payload.MemoryUsedBytes),
+		u64ToMetricInt64(payload.RootDiskTotalBytes),
+		u64ToMetricInt64(payload.RootDiskUsedBytes),
+	); err != nil {
+		return zero, fmt.Errorf("persist device metrics: %w", err)
 	}
 
 	if d.OnHeartbeat != nil {

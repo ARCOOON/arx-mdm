@@ -126,7 +126,8 @@ func (h *deviceCommandsHandler) handleCreate(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	payload := req.Payload
-	if commandType == models.DeviceCommandTypeScript {
+	switch commandType {
+	case models.DeviceCommandTypeScript:
 		if !utf8.ValidString(payload) {
 			writeTicketsError(w, http.StatusBadRequest, "script payload must be valid UTF-8")
 			return
@@ -139,8 +140,37 @@ func (h *deviceCommandsHandler) handleCreate(w http.ResponseWriter, r *http.Requ
 			writeTicketsError(w, http.StatusBadRequest, "script payload is required")
 			return
 		}
-	} else if strings.TrimSpace(payload) != "" {
-		writeTicketsError(w, http.StatusBadRequest, "payload is only allowed for script commands")
+	case models.DeviceCommandTypeRestartService:
+		payload = strings.TrimSpace(payload)
+		if payload == "" {
+			writeTicketsError(w, http.StatusBadRequest, "restart_service requires service name payload")
+			return
+		}
+		if len(payload) > 256 {
+			writeTicketsError(w, http.StatusBadRequest, "restart_service payload too long")
+			return
+		}
+	case models.DeviceCommandTypePushConfig:
+		if strings.TrimSpace(payload) == "" {
+			writeTicketsError(w, http.StatusBadRequest, "push_config requires JSON payload")
+			return
+		}
+		if len(payload) > maxDeviceCommandPayloadBytes {
+			writeTicketsError(w, http.StatusBadRequest, fmt.Sprintf("push_config payload exceeds %d bytes", maxDeviceCommandPayloadBytes))
+			return
+		}
+		var probe map[string]any
+		if err := json.Unmarshal([]byte(payload), &probe); err != nil {
+			writeTicketsError(w, http.StatusBadRequest, "push_config payload must be JSON")
+			return
+		}
+	case models.DeviceCommandTypePing, models.DeviceCommandTypeReboot:
+		if strings.TrimSpace(payload) != "" {
+			writeTicketsError(w, http.StatusBadRequest, "payload is not used for ping or reboot commands")
+			return
+		}
+	default:
+		writeTicketsError(w, http.StatusBadRequest, "unsupported command_type")
 		return
 	}
 
@@ -151,7 +181,7 @@ func (h *deviceCommandsHandler) handleCreate(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	cmd, err := database.InsertDeviceCommand(ctx, h.deps.Pool, deviceID, commandType, payload)
+	cmd, err := database.InsertDeviceCommand(ctx, h.deps.Pool, deviceID, commandType, payload, nil)
 	if err != nil {
 		writeTicketsError(w, http.StatusBadRequest, err.Error())
 		return

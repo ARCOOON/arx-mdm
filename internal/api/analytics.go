@@ -44,9 +44,9 @@ type AnalyticsSummaryResponse struct {
 		Offline int64 `json:"offline"`
 	} `json:"assets"`
 	OSDistribution map[string]int64 `json:"os_distribution"`
-	Tickets        struct {
+	Incidents      struct {
 		Unresolved int64 `json:"unresolved"`
-	} `json:"tickets"`
+	} `json:"incidents"`
 }
 
 // RegisterAnalyticsRoutes registers dashboard analytics read APIs.
@@ -79,8 +79,8 @@ SELECT
   (SELECT COUNT(*)::bigint FROM assets) AS total,
   (SELECT COUNT(*)::bigint FROM assets
    WHERE last_seen IS NOT NULL AND last_seen >= now() - ($1::bigint * interval '1 second')) AS online,
-  (SELECT COUNT(*)::bigint FROM tickets
-   WHERE lower(status) NOT IN ('resolved', 'closed')) AS unresolved
+  (SELECT COUNT(*)::bigint FROM incidents
+   WHERE state NOT IN ('resolved', 'closed')) AS unresolved
 `, analyticsOnlineThresholdSeconds).Scan(&total, &online, &unresolved)
 	if err != nil {
 		h.deps.Logger.Error("analytics summary aggregate", "err", err)
@@ -124,6 +124,6 @@ GROUP BY os_type
 		out.Assets.Offline = total - online
 	}
 	out.OSDistribution = osDist
-	out.Tickets.Unresolved = unresolved
+	out.Incidents.Unresolved = unresolved
 	writeAnalyticsJSON(w, http.StatusOK, out)
 }

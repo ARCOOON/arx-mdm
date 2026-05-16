@@ -63,6 +63,7 @@ function tryParseAgentUplink(raw: unknown): AgentUplinkMessage | null {
     case 'fs_listdir_result':
     case 'net_list_result':
     case 'hostname_set_result':
+    case 'install_app_result':
       return o as AgentUplinkMessage
     default:
       return null

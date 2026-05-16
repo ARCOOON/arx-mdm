@@ -6,7 +6,7 @@ import {
   Package,
   LayoutDashboard,
   HardDrive,
-  Ticket,
+  Headphones,
   Radio,
   BookOpen,
   Users,
@@ -214,14 +214,14 @@ export function AppLayout() {
             Automations
           </NavLink>
           <NavLink
-            to="/tickets"
+            to="/service-desk"
             onClick={navLinkClose}
             className={({ isActive }) =>
               `${shell.nav} ${isActive ? shell.navActive : ''}`
             }
           >
-            <Ticket className="size-3.5 shrink-0 opacity-80" />
-            Tickets
+            <Headphones className="size-3.5 shrink-0 opacity-80" />
+            Service desk
           </NavLink>
           <NavLink
             to="/knowledge"

@@ -11,12 +11,12 @@ import {
 } from '../lib/deviceAssignmentApi'
 import { dashboardFetch } from '../lib/ticketsApi'
 
-type TicketListRow = {
+type IncidentListRow = {
   id: string
-  ticket_ref: string
-  title: string
-  status: string
-  priority: string
+  incident_number: string
+  short_description: string
+  state: string
+  priority: number
 }
 
 type AssetInfoSectionProps = {
@@ -34,9 +34,9 @@ export function AssetInfoSection({ deviceId, humanId }: AssetInfoSectionProps) {
   const [pendingUserId, setPendingUserId] = useState('')
   const [savingAssign, setSavingAssign] = useState(false)
 
-  const [tickets, setTickets] = useState<TicketListRow[]>([])
-  const [ticketsErr, setTicketsErr] = useState<string | null>(null)
-  const [loadingTickets, setLoadingTickets] = useState(true)
+  const [incidents, setIncidents] = useState<IncidentListRow[]>([])
+  const [incidentsErr, setIncidentsErr] = useState<string | null>(null)
+  const [loadingIncidents, setLoadingIncidents] = useState(true)
 
   const loadAssignment = useCallback(async () => {
     setAssignErr(null)
@@ -52,31 +52,31 @@ export function AssetInfoSection({ deviceId, humanId }: AssetInfoSectionProps) {
     }
   }, [deviceId])
 
-  const loadTickets = useCallback(async () => {
-    setTicketsErr(null)
-    setLoadingTickets(true)
+  const loadIncidents = useCallback(async () => {
+    setIncidentsErr(null)
+    setLoadingIncidents(true)
     try {
       const res = await dashboardFetch(
-        `/v1/tickets?device_id=${encodeURIComponent(deviceId)}`,
+        `/v1/incidents?device_id=${encodeURIComponent(deviceId)}`,
       )
       if (!res.ok) {
         const j = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(j?.error ?? res.statusText)
       }
-      const data = (await res.json()) as TicketListRow[]
-      setTickets(Array.isArray(data) ? data : [])
+      const data = (await res.json()) as IncidentListRow[]
+      setIncidents(Array.isArray(data) ? data : [])
     } catch (e) {
-      setTicketsErr(e instanceof Error ? e.message : 'Failed to load tickets')
-      setTickets([])
+      setIncidentsErr(e instanceof Error ? e.message : 'Failed to load incidents')
+      setIncidents([])
     } finally {
-      setLoadingTickets(false)
+      setLoadingIncidents(false)
     }
   }, [deviceId])
 
   useEffect(() => {
     void loadAssignment()
-    void loadTickets()
-  }, [loadAssignment, loadTickets])
+    void loadIncidents()
+  }, [loadAssignment, loadIncidents])
 
   useEffect(() => {
     if (!canOperate) {
@@ -207,34 +207,36 @@ export function AssetInfoSection({ deviceId, humanId }: AssetInfoSectionProps) {
 
         <div className="min-w-0">
           <div className="mb-2 text-[10px] font-semibold uppercase text-slate-500">
-            Device tickets
+            Linked incidents
           </div>
-          {ticketsErr ? (
-            <p className="text-[11px] text-rose-400/90">{ticketsErr}</p>
-          ) : loadingTickets ? (
-            <div className="text-[12px] text-slate-500">Loading tickets…</div>
-          ) : tickets.length === 0 ? (
+          {incidentsErr ? (
+            <p className="text-[11px] text-rose-400/90">{incidentsErr}</p>
+          ) : loadingIncidents ? (
+            <div className="text-[12px] text-slate-500">Loading incidents…</div>
+          ) : incidents.length === 0 ? (
             <p className="text-[12px] text-slate-500">
-              No open records linked to this device. Create one from the Tickets page.
+              No incidents linked to this device. Create one from Service desk.
             </p>
           ) : (
             <ul className="max-h-[200px] space-y-1 overflow-y-auto pr-1 text-[12px]">
-              {tickets.slice(0, 25).map((t) => (
+              {incidents.slice(0, 25).map((t) => (
                 <li
                   key={t.id}
                   className="flex flex-wrap items-baseline gap-2 rounded border border-slate-200/80 px-2 py-1 dark:border-slate-800/80"
                 >
                   <Link
-                    to="/tickets"
+                    to="/service-desk"
                     className="font-mono text-[11px] text-violet-400 hover:text-violet-300"
-                    title="Open Tickets workspace"
+                    title="Open Service desk"
                   >
-                    {t.ticket_ref}
+                    {t.incident_number}
                   </Link>
                   <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
-                    {t.title}
+                    {t.short_description}
                   </span>
-                  <span className="text-[10px] uppercase text-slate-500">{t.status}</span>
+                  <span className="text-[10px] uppercase text-slate-500">
+                    P{t.priority} · {t.state}
+                  </span>
                 </li>
               ))}
             </ul>

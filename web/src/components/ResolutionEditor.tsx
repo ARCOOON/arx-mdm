@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 
 export type ResolutionDoc = {
   id: string
-  ticket_id: string
+  incident_id: string
   summary: string
   markdown: string
   resolved_at: string

@@ -20,8 +20,23 @@ jobs:
         with:
           go-version: stable
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Build web dashboard
+        run: |
+          set -euo pipefail
+          cd web
+          npm ci && npm run build
+          cd ..
+          rm -rf internal/api/webui/dist
+          mkdir -p internal/api/webui/dist
+          cp -a web/dist/. internal/api/webui/dist/
+
       - name: Verify compilation
-        run: go build ./...
+        run: go build -tags embedui ./...
 
       - name: End-to-end integration tests
         run: go test -tags=e2e -count=1 -timeout 25m ./test/
@@ -37,13 +52,28 @@ jobs:
         with:
           go-version: stable
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Build web dashboard
+        run: |
+          set -euo pipefail
+          cd web
+          npm ci && npm run build
+          cd ..
+          rm -rf internal/api/webui/dist
+          mkdir -p internal/api/webui/dist
+          cp -a web/dist/. internal/api/webui/dist/
+
       - name: Cross-compile binaries
         run: |
           set -euo pipefail
           mkdir -p build
           export CGO_ENABLED=0
-          GOOS=linux GOARCH=amd64 go build -trimpath -o build/arx-server-linux-amd64 ./cmd/server
-          GOOS=windows GOARCH=amd64 go build -trimpath -o build/arx-server-windows-amd64.exe ./cmd/server
+          GOOS=linux GOARCH=amd64 go build -trimpath -tags embedui -o build/arx-server-linux-amd64 ./cmd/server
+          GOOS=windows GOARCH=amd64 go build -trimpath -tags embedui -o build/arx-server-windows-amd64.exe ./cmd/server
           GOOS=linux GOARCH=amd64 go build -trimpath -o build/arx-agent-linux-amd64 ./cmd/agent
           GOOS=windows GOARCH=amd64 go build -trimpath -o build/arx-agent-windows-amd64.exe ./cmd/agent
           chmod +x build/arx-server-linux-amd64 build/arx-agent-linux-amd64

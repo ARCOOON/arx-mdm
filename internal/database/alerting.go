@@ -16,8 +16,8 @@ import (
 
 const (
 	AlertKindBuiltinOffline = "builtin_offline"
-	AlertKindRuleOffline  = "rule_offline"
-	AlertKindRuleMetric   = "rule_metric"
+	AlertKindRuleOffline    = "rule_offline"
+	AlertKindRuleMetric     = "rule_metric"
 )
 
 // ListAlertRules returns all alert rules newest first.
@@ -139,6 +139,38 @@ func DeleteAlertRule(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) erro
 		return pgx.ErrNoRows
 	}
 	return nil
+}
+
+// LoadAlertRule loads a persisted rule row.
+func LoadAlertRule(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (models.AlertRule, error) {
+	var zero models.AlertRule
+	if pool == nil {
+		return zero, errors.New("database: pool is required")
+	}
+	var r models.AlertRule
+	err := pool.QueryRow(ctx, `
+SELECT id, name, target_type, metric, operator, threshold,
+       EXTRACT(EPOCH FROM duration)::bigint,
+       severity, is_enabled, target_device_id, created_at, updated_at
+FROM alert_rules WHERE id = $1
+`, id).Scan(
+		&r.ID,
+		&r.Name,
+		&r.TargetType,
+		&r.Metric,
+		&r.Operator,
+		&r.Threshold,
+		&r.DurationSeconds,
+		&r.Severity,
+		&r.IsEnabled,
+		&r.TargetDeviceID,
+		&r.CreatedAt,
+		&r.UpdatedAt,
+	)
+	if err != nil {
+		return zero, err
+	}
+	return r, nil
 }
 
 // AlertRuleMetricSample is an aggregated telemetry window sample.
@@ -288,7 +320,7 @@ type FireAlertOutcome struct {
 	ShouldNotify bool
 }
 
-const zeroUUID = uuid.UUID{}
+
 
 // UpsertUnresolvedAlert opens or refreshes one active alert fingerprint and computes notify cadence.
 func UpsertUnresolvedAlert(
@@ -424,7 +456,7 @@ WHERE id = $1
 
 // ResolveActiveAlertsKindsForDevice clears offline rows after a heartbeat.
 func ResolveActiveAlertsKindsForDevice(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.UUID) error {
-	if pool == nil || deviceID == zeroUUID {
+	if pool == nil || deviceID == uuid.Nil {
 		return errors.New("database: resolve offline args")
 	}
 	_, err := pool.Exec(ctx, `
@@ -546,11 +578,11 @@ WHERE resolved_at IS NULL
 
 // NotificationChannelRow is persisted delivery configuration loaded by notifications.Dispatcher.
 type NotificationChannelRow struct {
-	ID             uuid.UUID
-	ChannelType    string
-	ConfigJSON     []byte
-	SigningSecret  string
-	IsActive       bool
+	ID            uuid.UUID
+	ChannelType   string
+	ConfigJSON    []byte
+	SigningSecret string
+	IsActive      bool
 }
 
 func ListActiveNotificationChannels(ctx context.Context, pool *pgxpool.Pool) ([]NotificationChannelRow, error) {

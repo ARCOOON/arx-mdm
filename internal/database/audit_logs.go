@@ -16,12 +16,12 @@ import (
 
 // AuditLogFilter selects audit rows for admin listing APIs.
 type AuditLogFilter struct {
-	UserID            *uuid.UUID
-	ActionSubstr      string
-	ResourceType      string
-	SortDesc          bool
-	FromTS, ToTS      *time.Time
-	Limit, Offset     int64
+	UserID        *uuid.UUID
+	ActionSubstr  string
+	ResourceType  string
+	SortDesc      bool
+	FromTS, ToTS  *time.Time
+	Limit, Offset int64
 }
 
 // InsertAuditLogRow appends one row to audit_logs.

@@ -118,7 +118,7 @@ func (d *Dispatcher) SendTestChannel(ctx context.Context, channelID uuid.UUID) e
 		Severity: "info",
 		Title:    "ARX MDM connectivity test",
 		Message:  "Synthetic alert validating outbound routing for this channel.",
-		Details: map[string]any{"channel_id": channelID.String()},
+		Details:  map[string]any{"channel_id": channelID.String()},
 	}
 	switch strings.TrimSpace(row.ChannelType) {
 	case TypeSMTP:

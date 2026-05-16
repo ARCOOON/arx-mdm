@@ -73,7 +73,7 @@ func sendSMTPWithGoMail(ctx context.Context, log *slog.Logger, row database.Noti
 		wmail.WithTimeout(45 * time.Second),
 		wmail.WithPort(cfg.Port),
 		wmail.WithTLSConfig(&tls.Config{
-			ServerName:           cfg.Host,
+			ServerName:         cfg.Host,
 			MinVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: cfg.InsecureSkipVerify,
 		}),

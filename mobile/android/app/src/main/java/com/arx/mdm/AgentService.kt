@@ -103,6 +103,10 @@ class AgentService : Service() {
                 override fun wipeEnterprise() {
                     PolicyManager(applicationContext).wipeData()
                 }
+
+                override fun applyQuarantine(enabled: Boolean) {
+                    PolicyManager(applicationContext).applyNetworkQuarantine(enabled)
+                }
             })
         } catch (e: NoClassDefFoundError) {
             android.util.Log.w(

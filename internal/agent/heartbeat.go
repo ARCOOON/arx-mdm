@@ -69,15 +69,17 @@ func RunHeartbeat(ctx context.Context, logger *slog.Logger, opts HeartbeatOption
 			})
 		}
 		payload := api.TelemetryPayload{
-			Hostname:          snap.Hostname,
-			OSFamily:          snap.OSFamily,
-			OSVersion:         snap.OSVersion,
-			TotalRAMBytes:     snap.TotalRAMBytes,
-			CPUModel:          snap.CPUModel,
-			CPULogicalCores:   snap.CPULogicalCores,
-			CPUUsagePercent:   snap.CPUUsagePercent,
-			MemoryUsedBytes:   snap.UsedRAMBytes,
-			InstalledSoftware: sw,
+			Hostname:           snap.Hostname,
+			OSFamily:           snap.OSFamily,
+			OSVersion:          snap.OSVersion,
+			TotalRAMBytes:      snap.TotalRAMBytes,
+			CPUModel:           snap.CPUModel,
+			CPULogicalCores:    snap.CPULogicalCores,
+			CPUUsagePercent:    snap.CPUUsagePercent,
+			MemoryUsedBytes:    snap.UsedRAMBytes,
+			RootDiskTotalBytes: snap.RootDiskTotalBytes,
+			RootDiskUsedBytes:  snap.RootDiskUsedBytes,
+			InstalledSoftware:  sw,
 		}
 		body, err := json.Marshal(payload)
 		if err != nil {

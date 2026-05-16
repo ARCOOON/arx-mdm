@@ -179,30 +179,26 @@ func buildTelemetryWireMessage() ([]byte, error) {
 		})
 	}
 	payload := api.TelemetryPayload{
-		Hostname:          snap.Hostname,
-		OSFamily:          snap.OSFamily,
-		OSVersion:         snap.OSVersion,
-		TotalRAMBytes:     snap.TotalRAMBytes,
-		CPUModel:          snap.CPUModel,
-		CPULogicalCores:   snap.CPULogicalCores,
-		CPUUsagePercent:   snap.CPUUsagePercent,
-		MemoryUsedBytes:   snap.UsedRAMBytes,
-		InstalledSoftware: sw,
+		Hostname:           snap.Hostname,
+		OSFamily:           snap.OSFamily,
+		OSVersion:          snap.OSVersion,
+		TotalRAMBytes:      snap.TotalRAMBytes,
+		CPUModel:           snap.CPUModel,
+		CPULogicalCores:    snap.CPULogicalCores,
+		CPUUsagePercent:    snap.CPUUsagePercent,
+		MemoryUsedBytes:    snap.UsedRAMBytes,
+		RootDiskTotalBytes: snap.RootDiskTotalBytes,
+		RootDiskUsedBytes:  snap.RootDiskUsedBytes,
+		InstalledSoftware:  sw,
 	}
 	wire := struct {
-		Type              string  `json:"type"`
-		UptimeSeconds     uint64  `json:"uptime_seconds,omitempty"`
-		RootDiskTotalBytes uint64 `json:"root_disk_total_bytes,omitempty"`
-		RootDiskFreeBytes  uint64 `json:"root_disk_free_bytes,omitempty"`
-		RootDiskUsedBytes  uint64 `json:"root_disk_used_bytes,omitempty"`
+		Type          string `json:"type"`
+		UptimeSeconds uint64 `json:"uptime_seconds,omitempty"`
 		api.TelemetryPayload
 	}{
-		Type:               agentMsgTelemetry,
-		UptimeSeconds:      snap.UptimeSeconds,
-		RootDiskTotalBytes: snap.RootDiskTotalBytes,
-		RootDiskFreeBytes:  snap.RootDiskFreeBytes,
-		RootDiskUsedBytes:  snap.RootDiskUsedBytes,
-		TelemetryPayload:   payload,
+		Type:             agentMsgTelemetry,
+		UptimeSeconds:    snap.UptimeSeconds,
+		TelemetryPayload: payload,
 	}
 	return json.Marshal(wire)
 }

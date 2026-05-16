@@ -13,6 +13,7 @@ const (
 	DeviceCommandTypeScript          = "script"
 	DeviceCommandTypeRestartService  = "restart_service"
 	DeviceCommandTypePushConfig      = "push_config"
+	DeviceCommandTypeQuarantine      = "quarantine"
 
 	DeviceCommandStatusPending   = "pending"
 	DeviceCommandStatusSent      = "sent"

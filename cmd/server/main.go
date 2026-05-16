@@ -23,17 +23,17 @@ import (
 )
 
 const (
-	envListenAddr           = "ARX_LISTEN_ADDR"
-	envDatabaseURL          = "ARX_DATABASE_URL"
-	envPKIStoragePath       = "ARX_PKI_STORAGE_PATH"
-	envTLSCert              = "ARX_TLS_CERT"
-	envTLSKey               = "ARX_TLS_KEY"
-	envMTLSClientCABundle   = "ARX_MTLS_CLIENT_CA_BUNDLE"
-	envJWTSecret            = "ARX_JWT_SECRET"
-	envJWTIssuer            = "ARX_JWT_ISSUER"
-	envJWTTTL               = "ARX_JWT_TTL"
-	envBootstrapAdminUser   = "ARX_BOOTSTRAP_ADMIN_USERNAME"
-	envBootstrapAdminPass   = "ARX_BOOTSTRAP_ADMIN_PASSWORD"
+	envListenAddr         = "ARX_LISTEN_ADDR"
+	envDatabaseURL        = "ARX_DATABASE_URL"
+	envPKIStoragePath     = "ARX_PKI_STORAGE_PATH"
+	envTLSCert            = "ARX_TLS_CERT"
+	envTLSKey             = "ARX_TLS_KEY"
+	envMTLSClientCABundle = "ARX_MTLS_CLIENT_CA_BUNDLE"
+	envJWTSecret          = "ARX_JWT_SECRET"
+	envJWTIssuer          = "ARX_JWT_ISSUER"
+	envJWTTTL             = "ARX_JWT_TTL"
+	envBootstrapAdminUser = "ARX_BOOTSTRAP_ADMIN_USERNAME"
+	envBootstrapAdminPass = "ARX_BOOTSTRAP_ADMIN_PASSWORD"
 )
 
 func main() {

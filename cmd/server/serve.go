@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ARCOOON/arx-mdm/internal/alerting"
 	"github.com/ARCOOON/arx-mdm/internal/api"
 	"github.com/ARCOOON/arx-mdm/internal/auth"
 	"github.com/ARCOOON/arx-mdm/internal/database"
@@ -86,11 +87,18 @@ func runServe(logger *slog.Logger) error {
 	dashHub := ws.NewDashboardHub()
 	dashboardOrigins := parseDashboardOrigins(os.Getenv("ARX_DASHBOARD_ORIGINS"))
 
-	alerterCtx, alerterCancel := context.WithCancel(context.Background())
-	defer alerterCancel()
-	alerter := notifications.NewAlerter(pool, logger, notifications.Options{})
-	alerter.Start(alerterCtx)
-	go scheduler.Run(alerterCtx, scheduler.Deps{
+	bgWorkersCtx, bgWorkersCancel := context.WithCancel(context.Background())
+	defer bgWorkersCancel()
+	notifDispatcher := notifications.NewDispatcher(pool, logger)
+	notifDispatcher.Start(bgWorkersCtx)
+	alertEngine := alerting.NewEngine(alerting.Dependencies{
+		Pool:         pool,
+		Logger:       logger,
+		Dispatcher:   notifDispatcher,
+		TickInterval: 30 * time.Second,
+	})
+	alertEngine.Start(bgWorkersCtx)
+	go scheduler.Run(bgWorkersCtx, scheduler.Deps{
 		Pool:           pool,
 		Hub:            c2Hub,
 		Logger:         logger,
@@ -140,7 +148,7 @@ func runServe(logger *slog.Logger) error {
 		MTLSRequired:    mtlsReady,
 		AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
 		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
-			alerter.ClearStaleAck(ctx, assetID)
+			alertEngine.OnHeartbeat(ctx, assetID)
 		},
 		OnTelemetryAccepted: func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
 			msg, err := ws.MarshalTelemetryUpdate(c2Hub, certSerial, humanID, assetID, payload)
@@ -169,7 +177,7 @@ func runServe(logger *slog.Logger) error {
 		Auth:    dashAuth,
 		DashHub: dashHub,
 		OnAndroidRemoteWipeRequested: func(ctx context.Context, assetID uuid.UUID, humanID string) {
-			alerter.Notify(notifications.AlertEvent{
+			notifDispatcher.Notify(notifications.AlertEvent{
 				Type:    notifications.EventAndroidRemoteWipe,
 				Title:   "Android remote wipe requested",
 				Message: fmt.Sprintf("Remote wipe was requested for asset %s (%s).", humanID, assetID.String()),
@@ -182,10 +190,10 @@ func runServe(logger *slog.Logger) error {
 	})
 
 	api.RegisterAlertRoutes(mux, api.AlertsDeps{
-		Pool:    pool,
-		Logger:  logger,
-		Auth:    dashAuth,
-		Alerter: alerter,
+		Pool:       pool,
+		Logger:     logger,
+		Auth:       dashAuth,
+		Dispatcher: notifDispatcher,
 	})
 
 	notifyTickets := func() {
@@ -223,7 +231,7 @@ func runServe(logger *slog.Logger) error {
 					details["linked_human_id"] = hid
 				}
 			}
-			alerter.Notify(notifications.AlertEvent{
+			notifDispatcher.Notify(notifications.AlertEvent{
 				Type:    notifications.EventTicketINCCreated,
 				Title:   "New incident ticket",
 				Message: fmt.Sprintf("Incident %s created: %s", ticketRef, title),
@@ -273,7 +281,7 @@ func runServe(logger *slog.Logger) error {
 		Pool:            pool,
 		AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
 		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
-			alerter.ClearStaleAck(ctx, assetID)
+			alertEngine.OnHeartbeat(ctx, assetID)
 		},
 		OnAccepted: func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
 			msg, err := ws.MarshalTelemetryUpdate(c2Hub, certSerial, humanID, assetID, payload)
@@ -338,7 +346,7 @@ func runServe(logger *slog.Logger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 	<-shutdown
 	signal.Stop(shutdown)
-	alerterCancel()
+	bgWorkersCancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

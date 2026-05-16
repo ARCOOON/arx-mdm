@@ -154,8 +154,8 @@ export function UsersPage() {
         ) : err ? (
           <div className="text-sm text-rose-400">{err}</div>
         ) : (
-          <div className="overflow-auto rounded border border-slate-200 dark:border-slate-800">
-            <table className="min-w-full text-left text-sm">
+          <div className="min-w-0 overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
+            <table className="min-w-[520px] w-full text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-100 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-900/80">
                 <tr>
                   <th className="px-3 py-2">Username</th>
@@ -172,7 +172,7 @@ export function UsersPage() {
                     <td className="px-3 py-2 text-xs text-slate-500">
                       {new Date(u.created_at).toLocaleString()}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="whitespace-nowrap px-3 py-2 text-right align-middle">
                       {u.id !== me?.id ? (
                         <button
                           type="button"

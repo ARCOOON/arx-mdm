@@ -88,7 +88,7 @@ export function DashboardPage() {
   )
 
   return (
-    <div className="min-h-full border-b border-slate-200/80 bg-slate-50 px-6 py-4 dark:border-slate-800/80 dark:bg-slate-950">
+    <div className="min-h-full border-b border-slate-200/80 bg-slate-50 px-4 py-4 md:px-6 dark:border-slate-800/80 dark:bg-slate-950">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -123,7 +123,7 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
         <MetricCard
           icon={<HardDrive className="size-4 text-sky-400" />}
           label="Total assets"
@@ -175,7 +175,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
         <MetricCard
           icon={<HardDrive className="size-4 text-slate-400" />}
           label="Live catalog (WS)"
@@ -198,7 +198,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded border border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/50 p-3">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             OS distribution (registered)

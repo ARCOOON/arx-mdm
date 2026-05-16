@@ -150,7 +150,7 @@ export function AuditLogsPage() {
   const canNext = offset + limit < total
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4 text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4 text-slate-900 dark:text-slate-100">
       <div className="mb-3 flex shrink-0 items-start gap-2">
         <ClipboardList className="mt-0.5 size-4 text-slate-400" />
         <div>
@@ -272,8 +272,8 @@ export function AuditLogsPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded border border-slate-200 dark:border-slate-800">
-        <table className="w-full border-collapse text-left text-[10px]">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto rounded border border-slate-200 dark:border-slate-800">
+        <table className="min-w-[880px] w-full border-collapse text-left text-[10px]">
           <thead className="sticky top-0 z-[1] bg-slate-100/95 dark:bg-slate-900/95 text-[9px] font-semibold uppercase tracking-wide text-slate-500 backdrop-blur">
             <tr>
               <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">

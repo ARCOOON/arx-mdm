@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Bell, Flame, Mail, Send, Trash2, Webhook } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -314,7 +314,11 @@ export function SettingsPage() {
           <p className="mt-1 max-w-3xl text-xs text-slate-500">
             Define Prometheus-style thresholds, route notifications through SMTP, Slack-compatible webhooks, or
             signed generic JSON webhooks. The alerting engine evaluates metrics every thirty seconds plus a built-in
-            five-minute offline watchdog.
+            five-minute offline watchdog. Automated backup controls live under{' '}
+            <Link className="text-sky-600 hover:underline dark:text-sky-400" to="/settings/backups">
+              Settings / Backup bundles
+            </Link>
+            .
           </p>
         </div>
       </div>

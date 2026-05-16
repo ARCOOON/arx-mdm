@@ -21,7 +21,7 @@ export function AssetsPage() {
   }, [lastCommandResult])
 
   return (
-    <div className="min-h-full bg-slate-50 px-6 py-4 dark:bg-slate-950">
+    <div className="min-h-full bg-slate-50 px-4 py-4 md:px-6 dark:bg-slate-950">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -34,8 +34,8 @@ export function AssetsPage() {
         {hint}
       </div>
 
-      <div className="overflow-hidden rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40">
-        <table className="w-full border-collapse text-left text-[12px]">
+      <div className="min-w-0 overflow-x-auto rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <table className="min-w-[720px] w-full border-collapse text-left text-[12px]">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900/90 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               <th className="px-2 py-1.5">ARX ID</th>
@@ -95,7 +95,7 @@ export function AssetsPage() {
                       {a.c2_connected ? 'online' : 'offline'}
                     </span>
                   </td>
-                  <td className="px-2 py-1 text-right">
+                  <td className="whitespace-nowrap px-2 py-1 text-right align-middle">
                     <button
                       type="button"
                       title="Send shutdown command"

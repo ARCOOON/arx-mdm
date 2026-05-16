@@ -11,12 +11,41 @@ import { DeviceCommandPanel } from '../components/DeviceCommandPanel'
 import { DeviceMetricsCharts } from '../components/DeviceMetricsCharts'
 import { AssetInfoSection } from '../components/AssetInfoSection'
 import { formatBytesPair, formatCpu } from '../lib/format'
+import {
+  assignAppToDevice,
+  fetchAppCatalog,
+  fetchDeviceAppDeployments,
+  type AppCatalogRow,
+  type DeviceAppRow,
+} from '../lib/appCatalogApi'
+import { postDeviceLock, postDeviceWipe } from '../lib/deviceSecurityApi'
 import type {
   NetworkInterfaceWire,
   TelemetryInstalledApp,
 } from '../types/ws'
 
 type Tab = 'overview' | 'software' | 'files' | 'system' | 'android_mdm'
+
+function catalogTargetFromAsset(asset?: {
+  os_type?: string
+  os: string
+}): string | null {
+  const t = (asset?.os_type ?? '').trim().toLowerCase()
+  if (t === 'windows' || t === 'linux' || t === 'android') {
+    return t
+  }
+  const os = (asset?.os ?? '').toLowerCase()
+  if (os.includes('android')) {
+    return 'android'
+  }
+  if (os.includes('windows')) {
+    return 'windows'
+  }
+  if (os.includes('linux')) {
+    return 'linux'
+  }
+  return null
+}
 
 function deployPayloadForInventory(
   targetArxId: string,
@@ -62,6 +91,17 @@ export function AssetDetailPage() {
   const [hostMsg, setHostMsg] = useState<string | null>(null)
   const netListReq = useRef<string | null>(null)
   const hostSetReq = useRef<string | null>(null)
+  const [deployOpen, setDeployOpen] = useState(false)
+  const [deviceApps, setDeviceApps] = useState<DeviceAppRow[]>([])
+  const [catalogPick, setCatalogPick] = useState<AppCatalogRow[]>([])
+  const [selCatalogId, setSelCatalogId] = useState('')
+  const [deployBusy, setDeployBusy] = useState(false)
+  const [deployMsg, setDeployMsg] = useState<string | null>(null)
+  const [wipeModalOpen, setWipeModalOpen] = useState(false)
+  const [wipeConfirmInput, setWipeConfirmInput] = useState('')
+  const [securityMsg, setSecurityMsg] = useState<string | null>(null)
+  const [lockBusy, setLockBusy] = useState(false)
+  const [wipeBusy, setWipeBusy] = useState(false)
   const {
     assets,
     sendJson,
@@ -69,7 +109,25 @@ export function AssetDetailPage() {
     subscribeAgentUplink,
     subscribeServerMessages,
   } = useWebSocket()
-  const { canOperate } = useAuth()
+  const { canOperate, isAdmin } = useAuth()
+
+  const asset = useMemo(
+    () => assets.find((a) => a.human_id === decodedId),
+    [assets, decodedId],
+  )
+
+  const reloadDeployments = useCallback(async () => {
+    const id = asset?.id?.trim()
+    if (!id) {
+      return
+    }
+    try {
+      const rows = await fetchDeviceAppDeployments(id)
+      setDeviceApps(rows)
+    } catch {
+      // Background refresh keeps the table fresh without burying benign errors during polling.
+    }
+  }, [asset?.id])
 
   useEffect(() => {
     return subscribeAgentUplink((msg) => {
@@ -79,6 +137,9 @@ export function AssetDetailPage() {
             ? `Package ${msg.operation ?? 'op'} OK`
             : `Package error: ${msg.error ?? 'unknown'}`,
         )
+      }
+      if (msg.type === 'install_app_result' && msg.target_arx_id === decodedId) {
+        void reloadDeployments()
       }
       if (msg.type === 'net_list_result') {
         if (
@@ -106,12 +167,90 @@ export function AssetDetailPage() {
         }
       }
     })
-  }, [subscribeAgentUplink, decodedId, hostInput])
+  }, [subscribeAgentUplink, decodedId, hostInput, reloadDeployments])
 
-  const asset = useMemo(
-    () => assets.find((a) => a.human_id === decodedId),
-    [assets, decodedId],
-  )
+  useEffect(() => {
+    reloadDeployments().catch(() => {})
+    const iv = window.setInterval(() => {
+      reloadDeployments().catch(() => {})
+    }, 20000)
+    return () => window.clearInterval(iv)
+  }, [reloadDeployments])
+
+  const loadCatalogChoices = useCallback(async () => {
+    const list = await fetchAppCatalog()
+    const tg = catalogTargetFromAsset(asset)
+    setCatalogPick(tg ? list.filter((x) => x.target_os === tg) : list)
+    setSelCatalogId('')
+  }, [asset])
+
+  async function submitDeployApp() {
+    if (!asset?.id || !selCatalogId) {
+      return
+    }
+    setDeployBusy(true)
+    setDeployMsg(null)
+    try {
+      const res = await assignAppToDevice(asset.id, selCatalogId)
+      setDeployMsg(
+        res.dispatch_succeeded
+          ? 'Install command dispatched to the agent.'
+          : `Queued but dispatch failed: ${res.dispatch_error ?? 'unknown'}`,
+      )
+      setDeployOpen(false)
+      await reloadDeployments()
+    } catch (e) {
+      setDeployMsg(e instanceof Error ? e.message : String(e))
+    } finally {
+      setDeployBusy(false)
+    }
+  }
+
+  async function submitLockDevice() {
+    const id = asset?.id?.trim()
+    if (!id) {
+      return
+    }
+    setLockBusy(true)
+    setSecurityMsg(null)
+    try {
+      const res = await postDeviceLock(id)
+      setSecurityMsg(
+        res.dispatched
+          ? 'Lock command dispatched to the agent.'
+          : 'Lock request accepted.',
+      )
+    } catch (e) {
+      setSecurityMsg(e instanceof Error ? e.message : 'Lock request failed.')
+    } finally {
+      setLockBusy(false)
+    }
+  }
+
+  async function submitWipeDevice() {
+    const id = asset?.id?.trim()
+    if (!id || wipeConfirmInput.trim() !== decodedId.trim()) {
+      return
+    }
+    setWipeBusy(true)
+    setSecurityMsg(null)
+    try {
+      const res = await postDeviceWipe(id)
+      setSecurityMsg(
+        res.dispatched
+          ? 'Enterprise wipe command dispatched to the agent.'
+          : 'Wipe request accepted.',
+      )
+      setWipeModalOpen(false)
+      setWipeConfirmInput('')
+    } catch (e) {
+      setSecurityMsg(
+        e instanceof Error ? e.message : 'Enterprise wipe request failed.',
+      )
+    } finally {
+      setWipeBusy(false)
+    }
+  }
 
   const isWindows = useMemo(() => {
     const os = (asset?.os ?? '').toLowerCase()
@@ -201,7 +340,7 @@ export function AssetDetailPage() {
   )
 
   return (
-    <div className="min-h-full bg-slate-50 px-6 py-4 dark:bg-slate-950">
+    <div className="min-h-full bg-slate-50 px-4 py-4 md:px-6 dark:bg-slate-950">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link
           to="/assets"
@@ -298,6 +437,246 @@ export function AssetDetailPage() {
                 c2Connected={asset.c2_connected}
                 subscribeServerMessages={subscribeServerMessages}
               />
+            </div>
+          ) : null}
+
+          {isAdmin && asset.id ? (
+            <div className="mb-8 rounded border border-rose-800/60 bg-rose-950/15 p-4 text-[12px] text-slate-200">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-rose-300/95">
+                Danger zone
+              </div>
+              <p className="mb-4 text-[11px] text-slate-400">
+                Remote lock and enterprise wipe are audited and require an online
+                C2 session. Wipe removes ARX enrollment and agent binaries on
+                desktop endpoints or factory-resets managed Android devices.
+              </p>
+              {securityMsg ? (
+                <div className="mb-4 rounded border border-slate-600 bg-slate-900/60 px-3 py-2 text-[11px] text-slate-200">
+                  {securityMsg}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={!asset.c2_connected || lockBusy}
+                  onClick={() => void submitLockDevice()}
+                  className="rounded border border-amber-700/80 bg-amber-950/40 px-3 py-2 text-[11px] font-medium text-amber-100 hover:bg-amber-900/50 disabled:opacity-40"
+                >
+                  {lockBusy ? 'Locking…' : 'Lock device'}
+                </button>
+                <button
+                  type="button"
+                  disabled={!asset.c2_connected || wipeBusy}
+                  onClick={() => {
+                    setSecurityMsg(null)
+                    setWipeConfirmInput('')
+                    setWipeModalOpen(true)
+                  }}
+                  className="rounded border border-rose-700 bg-rose-950/50 px-3 py-2 text-[11px] font-medium text-rose-100 hover:bg-rose-900/60 disabled:opacity-40"
+                >
+                  Wipe device…
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {deployMsg ? (
+            <div className="mb-4 rounded border border-slate-500/40 bg-slate-900/50 px-3 py-2 text-[12px] text-slate-200">
+              {deployMsg}
+            </div>
+          ) : null}
+
+          {asset.id ? (
+            <div className="mb-8 rounded border border-slate-200 bg-white/95 p-4 text-[12px] dark:border-slate-800 dark:bg-slate-900/35">
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <div className="text-[11px] font-semibold uppercase text-slate-500">
+                  Software catalog deployments
+                </div>
+                {canOperate ? (
+                  <button
+                    type="button"
+                    disabled={!asset.c2_connected}
+                    onClick={() => {
+                      setDeployMsg(null)
+                      void loadCatalogChoices().then(() => setDeployOpen(true))
+                    }}
+                    className="rounded bg-sky-800 px-2.5 py-1 text-[11px] font-medium text-sky-50 hover:bg-sky-700 disabled:opacity-40"
+                  >
+                    Deploy software
+                  </button>
+                ) : null}
+              </div>
+              <div className="overflow-x-auto rounded border border-slate-200 dark:border-slate-800">
+                <table className="w-full border-collapse text-left text-[11px]">
+                  <thead className="bg-slate-900/85 text-slate-500">
+                    <tr>
+                      <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">
+                        Catalog app
+                      </th>
+                      <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">
+                        Version
+                      </th>
+                      <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">
+                        Status
+                      </th>
+                      <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">
+                        Updated
+                      </th>
+                      <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">
+                        Detail
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-300">
+                    {deviceApps.map((da) => (
+                      <tr
+                        key={`${da.app_id}-${da.last_updated}`}
+                        className="border-b border-slate-200 dark:border-slate-800/80"
+                      >
+                        <td className="px-2 py-1.5 font-medium">{da.app_name}</td>
+                        <td className="px-2 py-1.5 font-mono text-[10px] text-slate-500">
+                          {da.app_version}
+                        </td>
+                        <td className="px-2 py-1.5 capitalize text-sky-400/95">
+                          {da.status}
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-500">
+                          {new Date(da.last_updated).toLocaleString()}
+                        </td>
+                        <td className="max-w-[260px] truncate px-2 py-1.5 text-rose-300/95">
+                          {da.error_message ?? ''}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {deviceApps.length === 0 ? (
+                  <div className="px-3 py-4 text-[12px] text-slate-600">
+                    No deployments yet. Assign a catalog app when C2 reports online.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {deployOpen && asset.id ? (
+            <div
+              className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-3 sm:p-4"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-slate-700 bg-slate-900 p-4 text-[12px] text-slate-100 shadow-xl">
+                <div className="mb-3 flex justify-between gap-2">
+                  <div className="font-semibold">Deploy catalog package</div>
+                  <button
+                    type="button"
+                    className="text-slate-400 hover:text-white"
+                    onClick={() => setDeployOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+                <p className="mb-3 text-[11px] text-slate-500">
+                  The server records device status updates when the endpoint reports{' '}
+                  <code className="text-slate-400">install_app_result</code> telemetry.
+                </p>
+                <select
+                  className="mb-4 w-full rounded border border-slate-600 bg-slate-950 px-2 py-2"
+                  value={selCatalogId}
+                  onChange={(e) => setSelCatalogId(e.target.value)}
+                >
+                  <option value="">Select catalog package…</option>
+                  {catalogPick.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.version || '?'}) [{c.target_os}]
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={deployBusy || !selCatalogId}
+                    onClick={() => void submitDeployApp()}
+                    className="rounded bg-emerald-700 px-3 py-2 text-[11px] font-medium text-white hover:bg-emerald-600 disabled:opacity-40"
+                  >
+                    Deploy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeployOpen(false)}
+                    className="rounded px-3 py-2 text-[11px] text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {wipeModalOpen && asset.id ? (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="wipe-dialog-title"
+            >
+              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-rose-900/80 bg-slate-900 p-4 text-[12px] text-slate-100 shadow-xl">
+                <div className="mb-3 flex justify-between gap-2">
+                  <div id="wipe-dialog-title" className="font-semibold text-rose-100">
+                    Confirm enterprise wipe
+                  </div>
+                  <button
+                    type="button"
+                    className="text-slate-400 hover:text-white"
+                    onClick={() => {
+                      setWipeModalOpen(false)
+                      setWipeConfirmInput('')
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+                <p className="mb-2 text-[11px] text-rose-200/90">
+                  This permanently removes ARX management from the endpoint (desktop:
+                  uninstall agent and clear certificates; Android: factory reset).
+                  Type the device ARX identifier exactly to proceed.
+                </p>
+                <p className="mb-3 font-mono text-[11px] text-slate-300">
+                  {decodedId}
+                </p>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Type device ARX ID"
+                  value={wipeConfirmInput}
+                  onChange={(e) => setWipeConfirmInput(e.target.value)}
+                  className="mb-4 w-full rounded border border-slate-600 bg-slate-950 px-2 py-2 font-mono text-[11px]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={
+                      wipeBusy ||
+                      wipeConfirmInput.trim() !== decodedId.trim()
+                    }
+                    onClick={() => void submitWipeDevice()}
+                    className="rounded bg-rose-800 px-3 py-2 text-[11px] font-medium text-white hover:bg-rose-700 disabled:opacity-40"
+                  >
+                    {wipeBusy ? 'Sending…' : 'Wipe device'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWipeModalOpen(false)
+                      setWipeConfirmInput('')
+                    }}
+                    className="rounded px-3 py-2 text-[11px] text-slate-400 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           ) : null}
 

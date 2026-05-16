@@ -5,7 +5,9 @@ import android.content.Context
 import android.os.BatteryManager
 import android.os.Build
 import android.provider.Settings
+import com.arx.mdm.network.MDMPolicyEnforcementDto
 import com.arx.mdm.network.TelemetryPayloadDto
+import com.arx.mdm.policy.PolicyEnforcementReporter
 
 object TelemetrySnapshot {
 
@@ -23,6 +25,8 @@ object TelemetrySnapshot {
 
         val model = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
+        val enf = PolicyEnforcementReporter.snapshot()
+
         return TelemetryPayloadDto(
             hostname = hostname,
             osType = "android",
@@ -35,6 +39,7 @@ object TelemetrySnapshot {
             deviceModel = model,
             macAddress = MacAddressCollector.primaryMacAddress(),
             installedSoftware = emptyList(),
+            mdmPolicyEnforcement = MDMPolicyEnforcementDto(state = enf.first, detail = enf.second),
         )
     }
 

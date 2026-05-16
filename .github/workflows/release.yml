@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Verify compilation
+        run: go build ./...
+
+      - name: End-to-end integration tests
+        run: go test -tags=e2e -count=1 -timeout 25m ./test/
+
+  release:
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Cross-compile binaries
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          export CGO_ENABLED=0
+          GOOS=linux GOARCH=amd64 go build -trimpath -o build/arx-server-linux-amd64 ./cmd/server
+          GOOS=windows GOARCH=amd64 go build -trimpath -o build/arx-server-windows-amd64.exe ./cmd/server
+          GOOS=linux GOARCH=amd64 go build -trimpath -o build/arx-agent-linux-amd64 ./cmd/agent
+          GOOS=windows GOARCH=amd64 go build -trimpath -o build/arx-agent-windows-amd64.exe ./cmd/agent
+          chmod +x build/arx-server-linux-amd64 build/arx-agent-linux-amd64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            build/arx-server-linux-amd64
+            build/arx-server-windows-amd64.exe
+            build/arx-agent-linux-amd64
+            build/arx-agent-windows-amd64.exe

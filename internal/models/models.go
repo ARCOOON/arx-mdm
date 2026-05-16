@@ -107,6 +107,26 @@ type AndroidPolicy struct {
 	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 }
 
+// AppCatalog describes a downloadable software package staged on the MDM server or referenced by HTTPS URL.
+type AppCatalog struct {
+	ID             uuid.UUID `json:"id" db:"id"`
+	Name           string    `json:"name" db:"name"`
+	Version        string    `json:"version" db:"version"`
+	TargetOS       string    `json:"target_os" db:"target_os"`
+	FilePathOrURL  string    `json:"file_path_or_url" db:"file_path_or_url"`
+	InstallArgs    string    `json:"install_args" db:"install_args"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+}
+
+// DeviceApp captures deployment lifecycle for a catalog app on one managed asset (composite PK on device_id + app_id).
+type DeviceApp struct {
+	DeviceID     uuid.UUID `json:"device_id" db:"device_id"`
+	AppID        uuid.UUID `json:"app_id" db:"app_id"`
+	Status       string    `json:"status" db:"status"`
+	LastUpdated  time.Time `json:"last_updated" db:"last_updated"`
+	ErrorMessage *string   `json:"error_message,omitempty" db:"error_message"`
+}
+
 // AuditLog is an append-only operator or system action record (REST mutation or C&C dispatch).
 type AuditLog struct {
 	ID            uuid.UUID  `json:"id" db:"id"`

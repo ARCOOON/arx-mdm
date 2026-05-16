@@ -16,6 +16,8 @@ import {
   Timer,
   Menu,
   X,
+  Shield,
+  Network,
 } from 'lucide-react'
 import { useWebSocket } from '../../hooks/useWebSocket'
 import { useAuth } from '../../context/AuthContext'
@@ -32,7 +34,7 @@ function statusDot(state: string) {
     case 'error':
       return 'bg-rose-500'
     default:
-      return 'bg-slate-400 dark:bg-slate-500'
+      return 'bg-gray-400 dark:bg-gray-700'
   }
 }
 
@@ -82,12 +84,32 @@ export function AppLayout() {
     }
   }, [])
 
+  const navCls = ({ isActive }: { isActive: boolean }) =>
+    `${shell.nav} ${isActive ? shell.navActive : ''}`
+
+  const Item = ({
+    to,
+    end,
+    label,
+    icon: Icon,
+  }: {
+    to: string
+    label: string
+    end?: boolean
+    icon: typeof LayoutDashboard
+  }) => (
+    <NavLink to={to} end={end} onClick={navLinkClose} className={navCls}>
+      <Icon className="size-3.5 shrink-0 opacity-80" />
+      {label}
+    </NavLink>
+  )
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-slate-50 dark:bg-slate-950 md:flex-row">
-      <header className="flex shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/80 md:hidden">
+    <div className="flex h-full min-h-0 flex-col bg-gray-50 dark:bg-neutral-950 md:flex-row">
+      <header className="flex shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-neutral-950 md:hidden">
         <button
           type="button"
-          className="rounded p-1.5 text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="rounded-xl p-1.5 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-neutral-900"
           aria-label="Open navigation menu"
           aria-expanded={mobileNavOpen}
           onClick={() => setMobileNavOpen(true)}
@@ -95,12 +117,10 @@ export function AppLayout() {
           <Menu className="size-5" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            ARX MDM
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            ARX MDM Surface
           </div>
-          <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Operations
-          </div>
+          <div className="truncate text-sm font-semibold text-gray-950 dark:text-gray-50">Live console</div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <NotificationCenter />
@@ -111,43 +131,38 @@ export function AppLayout() {
       {mobileNavOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 cursor-default bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 cursor-default bg-neutral-950/70 md:hidden"
           aria-label="Close navigation menu"
           onClick={closeMobileNav}
         />
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white/95 transition-transform duration-200 ease-out dark:border-slate-800 dark:bg-slate-900/80 md:relative md:z-auto md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[17.65rem] shrink-0 flex-col border-r border-gray-200 bg-white transition-transform duration-200 ease-out dark:border-gray-800 dark:bg-neutral-950 md:relative md:z-auto md:translate-x-0 ${
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="border-b border-slate-200 px-3 py-2.5 dark:border-slate-800">
+        <div className="border-b border-gray-200 px-3 py-2.5 dark:border-gray-800">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                ARX MDM
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                ARX Unified Endpoint Plane
               </div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Operations
+              <div className="text-sm font-semibold text-gray-950 dark:text-gray-50">
+                Dense operator desk
               </div>
               {user ? (
-                <div
-                  className="mt-1 truncate text-[10px] text-slate-500"
-                  title={user.username}
-                >
+                <div className="mt-1 truncate text-[10px] text-gray-600 dark:text-gray-400" title={user.username}>
                   {user.username}
-                  <span className="text-slate-400 dark:text-slate-600"> · </span>
-                  <span className="font-mono text-slate-600 dark:text-slate-400">
-                    {user.role}
-                  </span>
+                  <span className="text-gray-400 dark:text-gray-600"> · </span>
+                  <span className="font-mono">{user.role}</span>
                 </div>
               ) : null}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <button
                 type="button"
-                className="rounded p-1 text-slate-600 hover:bg-slate-200 md:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-xl p-1 text-gray-600 hover:bg-gray-100 md:hidden dark:text-gray-300 dark:hover:bg-neutral-900"
                 aria-label="Close navigation menu"
                 onClick={closeMobileNav}
               >
@@ -160,157 +175,59 @@ export function AppLayout() {
             </div>
           </div>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-          <NavLink
-            to="/"
-            end
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <LayoutDashboard className="size-3.5 shrink-0 opacity-80" />
-            Dashboard
-          </NavLink>
-          <NavLink
-            to="/assets"
-            end
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <HardDrive className="size-3.5 shrink-0 opacity-80" />
-            Assets
-          </NavLink>
-          <NavLink
-            to="/app-catalog"
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <Box className="size-3.5 shrink-0 opacity-80" />
-            App Catalog
-          </NavLink>
-          <NavLink
-            to="/software"
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <Package className="size-3.5 shrink-0 opacity-80" />
-            Software
-          </NavLink>
-          <NavLink
-            to="/automations"
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <Timer className="size-3.5 shrink-0 opacity-80" />
-            Automations
-          </NavLink>
-          <NavLink
-            to="/service-desk"
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <Headphones className="size-3.5 shrink-0 opacity-80" />
-            Service desk
-          </NavLink>
-          <NavLink
-            to="/knowledge"
-            onClick={navLinkClose}
-            className={({ isActive }) =>
-              `${shell.nav} ${isActive ? shell.navActive : ''}`
-            }
-          >
-            <BookOpen className="size-3.5 shrink-0 opacity-80" />
-            Knowledge
-          </NavLink>
+        <nav className="flex flex-1 flex-col gap-0 overflow-y-auto p-3 text-[11px]">
+          <div className={`${shell.navSection}`}>Command</div>
+          <Item to="/" end icon={LayoutDashboard} label="Operations overview" />
+
+          <div className={`${shell.navSection}`}>Fleet inventory</div>
+          <Item to="/assets" end icon={HardDrive} label="Devices & telemetry" />
+          <Item to="/software" end icon={Package} label="Software inventory" />
+
+          <div className={`${shell.navSection}`}>Apps & payloads</div>
+          <Item to="/app-catalog" icon={Box} label="Catalog artifacts" />
+          <Item to="/automations" icon={Timer} label="Automation meshes" />
+
+          <div className={`${shell.navSection}`}>Declarative posture</div>
+          <Item to="/mdm-profiles" icon={Shield} label="Configuration profiles" />
+          <Item to="/device-cohorts" icon={Network} label="Device cohorts" />
+
+          <div className={`${shell.navSection}`}>Support streams</div>
+          <Item to="/service-desk" icon={Headphones} label="Field operations inbox" />
+          <Item to="/knowledge" icon={BookOpen} label="Knowledge fabric" />
+
           {isAdmin ? (
-            <NavLink
-              to="/audit"
-              onClick={navLinkClose}
-              className={({ isActive }) =>
-                `${shell.nav} ${isActive ? shell.navActive : ''}`
-              }
-            >
-              <ClipboardList className="size-3.5 shrink-0 opacity-80" />
-              System logs
-            </NavLink>
-          ) : null}
-          {isAdmin ? (
-            <NavLink
-              to="/settings"
-              end
-              onClick={navLinkClose}
-              className={({ isActive }) =>
-                `${shell.nav} ${isActive ? shell.navActive : ''}`
-              }
-            >
-              <Sliders className="size-3.5 shrink-0 opacity-80" />
-              Settings &amp; alerts
-            </NavLink>
-          ) : null}
-          {isAdmin ? (
-            <NavLink
-              to="/settings/backups"
-              onClick={navLinkClose}
-              className={({ isActive }) =>
-                `${shell.nav} ${isActive ? shell.navActive : ''}`
-              }
-            >
-              <ArchiveRestore className="size-3.5 shrink-0 opacity-80" />
-              Backup bundles
-            </NavLink>
-          ) : null}
-          {isAdmin ? (
-            <NavLink
-              to="/users"
-              onClick={navLinkClose}
-              className={({ isActive }) =>
-                `${shell.nav} ${isActive ? shell.navActive : ''}`
-              }
-            >
-              <Users className="size-3.5 shrink-0 opacity-80" />
-              Users
-            </NavLink>
+            <>
+              <div className={`${shell.navSection}`}>Platform controls</div>
+              <Item to="/audit" icon={ClipboardList} label="Immutable audit trails" />
+              <Item to="/settings" icon={Sliders} end label="Alerting stance" />
+              <Item to="/settings/backups" icon={ArchiveRestore} label="Disaster capsules" />
+              <Item to="/users" icon={Users} label="Identity plane" />
+            </>
           ) : null}
         </nav>
-        <div className="border-t border-slate-200 p-2.5 dark:border-slate-800">
+        <div className="border-t border-gray-200 p-2.5 dark:border-gray-800">
           <button
             type="button"
-            className={`mb-2 flex w-full items-center justify-center gap-2 px-2 py-1.5 text-[11px] ${shell.btnSecondary}`}
+            className={`mb-2 flex w-full items-center justify-center gap-2 rounded-xl px-2 py-1.5 text-[11px] ${shell.btnSecondary}`}
             onClick={() => {
               logout()
               navigate('/login', { replace: true })
             }}
           >
             <LogOut className="size-3.5" />
-            Sign out
+            Secure sign-out
           </button>
-          <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-            <Radio className="size-3.5 text-slate-500" />
+          <div className="flex items-center gap-2 text-[11px] text-gray-600 dark:text-gray-400">
+            <Radio className="size-3.5 text-gray-500" />
             <span className="font-mono uppercase">{connectionState}</span>
-            <span
-              className={`ml-auto size-2 rounded-full ${statusDot(connectionState)}`}
-              title={lastError ?? 'live'}
-            />
+            <span className={`ml-auto size-2 rounded-full ${statusDot(connectionState)}`} title={lastError ?? 'live'} />
           </div>
           {lastError ? (
-            <div className="mt-1 line-clamp-2 font-mono text-[10px] text-rose-600 dark:text-rose-400/90">
-              {lastError}
-            </div>
+            <div className="mt-1 line-clamp-2 font-mono text-[10px] text-rose-600 dark:text-rose-400/90">{lastError}</div>
           ) : null}
         </div>
       </aside>
-      <main className="min-h-0 min-w-0 flex-1 overflow-auto">
+      <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-gray-50 dark:bg-neutral-950">
         <Outlet />
       </main>
     </div>

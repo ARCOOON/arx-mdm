@@ -105,6 +105,8 @@ func operatorForbidden(method, path string) bool {
 		return true
 	}
 	switch {
+	case strings.HasPrefix(p, "/v1/backups"):
+		return true
 	case p == "/v1/users" && method == http.MethodGet:
 		return true
 	case p == "/v1/users" && method == http.MethodPost:
@@ -119,6 +121,8 @@ func operatorForbidden(method, path string) bool {
 		}
 		return true
 	case method == http.MethodDelete && strings.HasPrefix(p, "/v1/packages/"):
+		return true
+	case method == http.MethodPost && strings.HasPrefix(p, "/v1/devices/") && (strings.HasSuffix(p, "/lock") || strings.HasSuffix(p, "/wipe")):
 		return true
 	}
 	return false

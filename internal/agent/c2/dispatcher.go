@@ -63,6 +63,40 @@ func HandleDownlink(ctx context.Context, logger *slog.Logger, write JSONWriter, 
 		}()
 	case "script":
 		go run()
+	case "restart_service":
+		body, berr := BuildRestartServiceScript(cmd.Payload)
+		if berr != nil {
+			_ = reportResult(write, commandID, false, "", berr.Error())
+			break
+		}
+		go func() {
+			out, err := executeScript(context.Background(), body)
+			if err != nil {
+				if logger != nil {
+					logger.Error("device command restart_service failed", "command_id", commandID, "err", err)
+				}
+				_ = reportResult(write, commandID, false, out, err.Error())
+				return
+			}
+			_ = reportResult(write, commandID, true, out, "")
+		}()
+	case "push_config":
+		body, berr := BuildPushConfigScript(cmd.Payload)
+		if berr != nil {
+			_ = reportResult(write, commandID, false, "", berr.Error())
+			break
+		}
+		go func() {
+			out, err := executeScript(context.Background(), body)
+			if err != nil {
+				if logger != nil {
+					logger.Error("device command push_config failed", "command_id", commandID, "err", err)
+				}
+				_ = reportResult(write, commandID, false, out, err.Error())
+				return
+			}
+			_ = reportResult(write, commandID, true, out, "")
+		}()
 	default:
 		_ = reportResult(write, commandID, false, "", fmt.Sprintf("unsupported command_type %q", commandType))
 	}
@@ -77,6 +111,18 @@ func dispatch(ctx context.Context, commandType, payload string) (string, error) 
 		return executeReboot()
 	case "script":
 		return executeScript(ctx, payload)
+	case "restart_service":
+		body, err := BuildRestartServiceScript(payload)
+		if err != nil {
+			return "", err
+		}
+		return executeScript(ctx, body)
+	case "push_config":
+		body, err := BuildPushConfigScript(payload)
+		if err != nil {
+			return "", err
+		}
+		return executeScript(ctx, body)
 	default:
 		return "", fmt.Errorf("unsupported command_type %q", commandType)
 	}

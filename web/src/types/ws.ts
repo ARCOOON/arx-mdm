@@ -129,6 +129,15 @@ export type PackageResultMessage = {
   package_type?: string
 }
 
+export type InstallAppResultMessage = {
+  type: 'install_app_result'
+  target_arx_id: string
+  app_id: string
+  ok: boolean
+  exit_code?: number
+  error?: string
+}
+
 export type NetworkAddrWire = { addr: string }
 
 export type NetworkInterfaceWire = {
@@ -177,6 +186,7 @@ export type AgentUplinkMessage =
   | PtyExitMessage
   | PtyStartedMessage
   | PackageResultMessage
+  | InstallAppResultMessage
   | FsListDirResultMessage
   | NetListResultMessage
   | HostnameSetResultMessage

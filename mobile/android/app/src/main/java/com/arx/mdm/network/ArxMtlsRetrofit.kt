@@ -1,11 +1,13 @@
 package com.arx.mdm.network
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -131,7 +133,22 @@ data class TelemetryPayloadDto(
     @SerializedName("device_model") val deviceModel: String,
     @SerializedName("mac_address") val macAddress: String,
     @SerializedName("installed_software") val installedSoftware: List<TelemetryInstalledAppDto> = emptyList(),
+    @SerializedName("mdm_policy_enforcement") val mdmPolicyEnforcement: MDMPolicyEnforcementDto? = null,
 )
+
+data class MDMPolicyEnforcementDto(
+    @SerializedName("state") val state: String,
+    @SerializedName("detail") val detail: String? = null,
+)
+
+data class EffectivePolicyWireDto(
+    @SerializedName("effective_payload") val effectivePayload: JsonObject? = null,
+)
+
+interface EffectivePolicyService {
+    @GET("v1/agent/effective-policy")
+    suspend fun getEffectivePolicy(): EffectivePolicyWireDto
+}
 
 data class AndroidPolicyWireDto(
     @SerializedName("camera_disabled") val cameraDisabled: Boolean = false,
@@ -144,6 +161,8 @@ data class TelemetryOkDto(
     @SerializedName("asset_id") val assetId: String? = null,
     @SerializedName("human_id") val humanId: String? = null,
     @SerializedName("android_policy") val androidPolicy: AndroidPolicyWireDto? = null,
+    @SerializedName("mdm_configuration_profiles") val mdmConfigurationProfiles: MutableList<JsonObject>? = null,
+    @SerializedName("mdm_managed_app_configs") val mdmManagedAppConfigs: MutableList<JsonObject>? = null,
 )
 
 interface TelemetryService {

@@ -13,13 +13,16 @@ import (
 )
 
 type assetRow struct {
-	ID         uuid.UUID
-	HumanID    string
-	Hostname   *string
-	CertSerial *string
-	OsType     string
-	LastSeen   *time.Time
-	Metadata   []byte
+	ID                  uuid.UUID
+	HumanID             string
+	Hostname            *string
+	CertSerial          *string
+	OsType              string
+	LastSeen            *time.Time
+	Metadata            []byte
+	ComplianceStatus    string
+	ComplianceReason    string
+	QuarantineEnabled   bool
 }
 
 // LoadAssetSnapshot queries the database and builds dashboard asset rows.
@@ -28,7 +31,8 @@ func LoadAssetSnapshot(ctx context.Context, pool *pgxpool.Pool, c2 *Hub) ([]Asse
 		return []AssetWire{}, nil
 	}
 	rows, err := pool.Query(ctx, `
-SELECT id, human_id, hostname, cert_serial, os_type, last_seen, COALESCE(metadata, '{}'::jsonb)::text
+SELECT id, human_id, hostname, cert_serial, os_type, last_seen, COALESCE(metadata, '{}'::jsonb)::text,
+       COALESCE(compliance_status, 'evaluating'), COALESCE(compliance_reason, ''), COALESCE(quarantine_enabled, false)
 FROM assets
 ORDER BY human_id
 `)
@@ -47,7 +51,8 @@ ORDER BY human_id
 	out := make([]AssetWire, 0)
 	for rows.Next() {
 		var r assetRow
-		if err := rows.Scan(&r.ID, &r.HumanID, &r.Hostname, &r.CertSerial, &r.OsType, &r.LastSeen, &r.Metadata); err != nil {
+		if err := rows.Scan(&r.ID, &r.HumanID, &r.Hostname, &r.CertSerial, &r.OsType, &r.LastSeen, &r.Metadata,
+			&r.ComplianceStatus, &r.ComplianceReason, &r.QuarantineEnabled); err != nil {
 			return nil, err
 		}
 		out = append(out, assetWireFromDB(r, connected))
@@ -83,10 +88,13 @@ func assetWireFromDB(r assetRow, connectedSerial map[string]struct{}) AssetWire 
 	_ = json.Unmarshal(r.Metadata, &meta)
 
 	a := AssetWire{
-		ID:          r.ID.String(),
-		HumanID:     r.HumanID,
-		OsType:      strings.TrimSpace(r.OsType),
-		C2Connected: c2On,
+		ID:                  r.ID.String(),
+		HumanID:             r.HumanID,
+		OsType:              strings.TrimSpace(r.OsType),
+		C2Connected:         c2On,
+		ComplianceStatus:    strings.TrimSpace(r.ComplianceStatus),
+		ComplianceReason:    strings.TrimSpace(r.ComplianceReason),
+		QuarantineEnabled:   r.QuarantineEnabled,
 	}
 	if meta.Telemetry != nil {
 		t := meta.Telemetry

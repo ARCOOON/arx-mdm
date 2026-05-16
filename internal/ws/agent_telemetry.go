@@ -17,11 +17,12 @@ const agentMsgTelemetry = "telemetry"
 
 // AgentTelemetryDeps configures WebSocket-originated telemetry handling on the server.
 type AgentTelemetryDeps struct {
-	Pool            *pgxpool.Pool
-	Logger          *slog.Logger
-	AdvisoryLockKey int64
-	OnHeartbeat     func(ctx context.Context, assetID uuid.UUID)
-	OnAccepted      func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload)
+	Pool               *pgxpool.Pool
+	Logger             *slog.Logger
+	AdvisoryLockKey    int64
+	ComplianceDispatch func(certSerial string, payload any) bool
+	OnHeartbeat        func(ctx context.Context, assetID uuid.UUID)
+	OnAccepted         func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload)
 }
 
 // tryHandleAgentTelemetry persists agent telemetry JSON received on the C2 WebSocket.
@@ -55,10 +56,12 @@ func tryHandleAgentTelemetry(ctx context.Context, certSerial string, data []byte
 	defer cancel()
 
 	result, err := api.ProcessTelemetry(opCtx, api.TelemetryProcessDeps{
-		Pool:            d.Pool,
-		AdvisoryLockKey: d.AdvisoryLockKey,
-		OnHeartbeat:     d.OnHeartbeat,
-		OnAccepted:      d.OnAccepted,
+		Pool:               d.Pool,
+		AdvisoryLockKey:    d.AdvisoryLockKey,
+		Logger:             d.Logger,
+		ComplianceDispatch: d.ComplianceDispatch,
+		OnHeartbeat:        d.OnHeartbeat,
+		OnAccepted:         d.OnAccepted,
 	}, certSerial, wire.TelemetryPayload)
 	if err != nil {
 		if d.Logger != nil {

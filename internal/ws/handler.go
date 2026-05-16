@@ -164,6 +164,12 @@ func NewWSGatewayHandler(d WSGatewayDeps) http.HandlerFunc {
 			"request_id", r.Header.Get("X-Request-Id"),
 		)
 
+		go func(cert string) {
+			flushCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+			defer cancel()
+			FlushPendingDeviceCommands(flushCtx, d.Pool, d.C2Hub, cert, d.Logger)
+		}(serial)
+
 		go writePump(session, d.Logger)
 		telDeps := d.AgentTelemetry
 		if telDeps.Pool == nil {

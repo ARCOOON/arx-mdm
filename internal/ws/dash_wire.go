@@ -1,13 +1,16 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
 
 	"github.com/ARCOOON/arx-mdm/internal/api"
+	"github.com/ARCOOON/arx-mdm/internal/database"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Dashboard wire message types.
@@ -34,6 +37,10 @@ type AssetWire struct {
 	LastSeenRFC3339   string                      `json:"last_seen,omitempty"`
 	C2Connected       bool                        `json:"c2_connected"`
 	InstalledSoftware []api.TelemetryInstalledApp `json:"installed_software"`
+
+	ComplianceStatus    string `json:"compliance_status,omitempty"`
+	ComplianceReason    string `json:"compliance_reason,omitempty"`
+	QuarantineEnabled   bool   `json:"quarantine_enabled"`
 }
 
 // AssetSnapshotMsg is the initial payload after dashboard connect.
@@ -74,7 +81,7 @@ type CommandResultMsg struct {
 }
 
 // MarshalTelemetryUpdate builds a telemetry_update JSON message for dashboards.
-func MarshalTelemetryUpdate(c2 *Hub, certSerial, humanID string, assetID uuid.UUID, p api.TelemetryPayload) ([]byte, error) {
+func MarshalTelemetryUpdate(pool *pgxpool.Pool, c2 *Hub, certSerial, humanID string, assetID uuid.UUID, p api.TelemetryPayload) ([]byte, error) {
 	c2On := false
 	if c2 != nil {
 		for _, s := range c2.ConnectedCertSerials() {
@@ -101,6 +108,16 @@ func MarshalTelemetryUpdate(c2 *Hub, certSerial, humanID string, assetID uuid.UU
 	}
 	if assetID != uuid.Nil {
 		a.ID = assetID.String()
+	}
+	if pool != nil && assetID != uuid.Nil {
+		qctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		row, err := database.GetAssetCompliance(qctx, pool, assetID)
+		cancel()
+		if err == nil {
+			a.ComplianceStatus = strings.TrimSpace(row.Status)
+			a.ComplianceReason = strings.TrimSpace(row.Reason)
+			a.QuarantineEnabled = row.QuarantineEnabled
+		}
 	}
 	return json.Marshal(TelemetryUpdateMsg{Type: MsgTypeTelemetryUpdate, Asset: a})
 }

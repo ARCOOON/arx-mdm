@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o
 
 # --- Stage 3: minimal runtime image
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata postgresql16-client
 RUN mkdir -p /app
 COPY --from=backend /out/arx-server /app/arx-server
 EXPOSE 8080

@@ -42,6 +42,9 @@ services:
       ARX_JWT_TTL: ${ARX_JWT_TTL:-24h}
       ARX_BOOTSTRAP_ADMIN_USERNAME: ${ARX_BOOTSTRAP_ADMIN_USERNAME:-admin}
       ARX_BOOTSTRAP_ADMIN_PASSWORD: ${ARX_BOOTSTRAP_ADMIN_PASSWORD:?set ARX_BOOTSTRAP_ADMIN_PASSWORD in environment}
+      ARX_APPS_STORAGE_PATH: /data/apps
+      ARX_BACKUP_STORAGE_PATH: /data/backups
+      # Optional: ARX_BACKUP_CRON_SPEC (default 0 2 * * *), ARX_BACKUP_RETENTION_DAYS (default 7), ARX_PG_DUMP_PATH
       ARX_DASHBOARD_ORIGINS: ${ARX_DASHBOARD_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080}
       # Optional: HTTPS + mTLS for telemetry (mount PEMs and set the three vars below)
       # ARX_TLS_CERT: /data/pki/server-fullchain.pem
@@ -51,6 +54,8 @@ services:
       - arx-internal
     volumes:
       - arx_pki_data:/data/pki
+      - arx_apps_data:/data/apps
+      - arx_backups_data:/data/backups
 
 networks:
   arx-internal:
@@ -59,3 +64,5 @@ networks:
 volumes:
   postgres_data:
   arx_pki_data:
+  arx_apps_data:
+  arx_backups_data:

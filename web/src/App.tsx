@@ -8,11 +8,13 @@ import {
 } from 'react-router-dom'
 import { WebSocketProvider } from './hooks/useWebSocket'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { AppLayout } from './components/AppLayout'
+import { AppLayout } from './components/Layout/AppLayout'
 import { DashboardPage } from './pages/Dashboard'
+import { BackupSettingsPage } from './pages/BackupSettings'
 import { AutomationsPage } from './pages/Automations'
 import { AssetsPage } from './pages/Assets'
 import { AssetDetailPage } from './pages/AssetDetail'
+import { AppCatalogPage } from './pages/AppCatalog'
 import { SoftwarePage } from './pages/Software'
 import { TicketsPage } from './pages/Tickets'
 import { LoginPage } from './pages/Login'
@@ -53,11 +55,13 @@ function AppRoutes() {
           <Route path="assets" element={<AssetsPage />} />
           <Route path="assets/:humanId" element={<AssetDetailPage />} />
           <Route path="software" element={<SoftwarePage />} />
+          <Route path="app-catalog" element={<AppCatalogPage />} />
           <Route path="automations" element={<AutomationsPage />} />
           <Route path="tickets" element={<TicketsPage />} />
           <Route path="knowledge" element={<KnowledgeBasePage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="audit" element={<AuditLogsPage />} />
+          <Route path="settings/backups" element={<BackupSettingsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

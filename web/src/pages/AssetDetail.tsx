@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { useAuth } from '../context/AuthContext'
 import { Terminal } from '../components/Terminal'
 import { RegistryEditor } from '../components/RegistryEditor'
 import { FileExplorer } from '../components/FileExplorer'
 import { AndroidPolicies } from '../components/AndroidPolicies'
+import { DeviceCommandPanel } from '../components/DeviceCommandPanel'
+import { DeviceMetricsCharts } from '../components/DeviceMetricsCharts'
+import { AssetInfoSection } from '../components/AssetInfoSection'
 import { formatBytesPair, formatCpu } from '../lib/format'
 import type {
   NetworkInterfaceWire,
@@ -63,7 +67,9 @@ export function AssetDetailPage() {
     sendJson,
     connectionState,
     subscribeAgentUplink,
+    subscribeServerMessages,
   } = useWebSocket()
+  const { canOperate } = useAuth()
 
   useEffect(() => {
     return subscribeAgentUplink((msg) => {
@@ -272,6 +278,30 @@ export function AssetDetailPage() {
             </div>
           </div>
 
+          {asset.id ? (
+            <AssetInfoSection deviceId={asset.id} humanId={decodedId} />
+          ) : null}
+
+          {asset.id ? (
+            <DeviceMetricsCharts
+              deviceId={asset.id}
+              humanId={decodedId}
+              subscribeServerMessages={subscribeServerMessages}
+            />
+          ) : null}
+
+          {asset.id ? (
+            <div className="mb-6">
+              <DeviceCommandPanel
+                deviceId={asset.id}
+                humanId={decodedId}
+                c2Connected={asset.c2_connected}
+                subscribeServerMessages={subscribeServerMessages}
+              />
+            </div>
+          ) : null}
+
+          {canOperate ? (
           <div className="flex flex-col gap-8 lg:flex-row">
             <div className="min-w-0 flex-1">
               <Terminal
@@ -290,6 +320,11 @@ export function AssetDetailPage() {
               />
             </div>
           </div>
+          ) : (
+            <p className="text-[12px] text-slate-500">
+              Remote terminal and registry tools are hidden for read-only users.
+            </p>
+          )}
         </>
       ) : tab === 'software' ? (
         <div className="space-y-3">
@@ -310,7 +345,9 @@ export function AssetDetailPage() {
                   <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Name</th>
                   <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Version</th>
                   <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Source</th>
+                  {canOperate ? (
                   <th className="border-b border-slate-200 dark:border-slate-800 px-2 py-2">Actions</th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody className="text-slate-300">
@@ -326,6 +363,7 @@ export function AssetDetailPage() {
                     <td className="px-2 py-1.5 font-mono text-sky-300/80">
                       {app.source}
                     </td>
+                    {canOperate ? (
                     <td className="whitespace-nowrap px-2 py-1.5">
                       <button
                         type="button"
@@ -344,6 +382,7 @@ export function AssetDetailPage() {
                         Uninstall
                       </button>
                     </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -362,6 +401,7 @@ export function AssetDetailPage() {
           c2Connected={asset.c2_connected}
           sendJson={sendJson}
           subscribeAgentUplink={subscribeAgentUplink}
+          allowMutations={canOperate}
         />
       ) : tab === 'android_mdm' ? (
         asset.id ? (
@@ -386,6 +426,7 @@ export function AssetDetailPage() {
             <div className="text-[10px] font-semibold uppercase text-slate-500">
               Hostname
             </div>
+            {canOperate ? (
             <div className="flex flex-wrap gap-2">
               <input
                 type="text"
@@ -403,6 +444,12 @@ export function AssetDetailPage() {
                 Apply
               </button>
             </div>
+            ) : (
+              <p className="text-[12px] text-slate-400">
+                Current hostname:{' '}
+                <span className="font-medium text-slate-200">{asset.hostname || '—'}</span>
+              </p>
+            )}
           </div>
           {netErr ? (
             <div className="rounded border border-rose-900/60 bg-rose-950/30 px-3 py-2 text-[12px] text-rose-800 dark:text-rose-200">

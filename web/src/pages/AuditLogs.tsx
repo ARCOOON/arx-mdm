@@ -10,8 +10,11 @@ type AuditRow = {
   user_id?: string
   username?: string
   action: string
+  resource_type?: string
+  resource_id?: string
   target_asset_id?: string
   target_human_id?: string
+  ip_address?: string
   details?: unknown
 }
 
@@ -61,19 +64,29 @@ export function AuditLogsPage() {
   const [toDate, setToDate] = useState('')
   const [userId, setUserId] = useState('')
   const [actionQ, setActionQ] = useState('')
-  const [applied, setApplied] = useState({ from: '', to: '', user: '', action: '' })
+  const [resourceTypeQ, setResourceTypeQ] = useState('')
+  const [sortDesc, setSortDesc] = useState(true)
+  const [applied, setApplied] = useState({
+    from: '',
+    to: '',
+    user: '',
+    action: '',
+    resourceType: '',
+  })
   const [users, setUsers] = useState<UserOption[]>([])
 
   const query = useMemo(() => {
     const p = new URLSearchParams()
     p.set('limit', String(limit))
     p.set('offset', String(offset))
+    p.set('sort', sortDesc ? 'desc' : 'asc')
     if (applied.from) p.set('from', applied.from)
     if (applied.to) p.set('to', applied.to)
     if (applied.user) p.set('user_id', applied.user)
     if (applied.action) p.set('action', applied.action)
+    if (applied.resourceType) p.set('resource_type', applied.resourceType)
     return p.toString()
-  }, [offset, applied])
+  }, [offset, applied, sortDesc])
 
   const loadUsers = useCallback(async () => {
     try {
@@ -90,7 +103,7 @@ export function AuditLogsPage() {
     setErr(null)
     setLoading(true)
     try {
-      const res = await dashboardFetch(`/v1/audit?${query}`)
+      const res = await dashboardFetch(`/v1/audit-logs?${query}`)
       if (!res.ok) {
         const j = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(j?.error ?? res.statusText)
@@ -124,6 +137,7 @@ export function AuditLogsPage() {
       to: toDate,
       user: userId,
       action: actionQ.trim(),
+      resourceType: resourceTypeQ.trim(),
     })
     setOffset(0)
   }
@@ -140,15 +154,15 @@ export function AuditLogsPage() {
       <div className="mb-3 flex shrink-0 items-start gap-2">
         <ClipboardList className="mt-0.5 size-4 text-slate-400" />
         <div>
-          <h1 className="text-sm font-semibold tracking-tight">Audit logs</h1>
+          <h1 className="text-sm font-semibold tracking-tight">System audit logs</h1>
           <p className="text-[10px] text-slate-500">
-            Admin-only. REST mutations and dashboard WebSocket C&C dispatches.
+            Admin-only. Includes REST mutations, sign-ins, device commands, assignments, and dashboard WebSocket C2 dispatches.
           </p>
         </div>
       </div>
 
       <form
-        className="mb-3 grid shrink-0 gap-2 rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 p-2.5 sm:grid-cols-2 lg:grid-cols-5"
+        className="mb-3 grid shrink-0 gap-2 rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 p-2.5 sm:grid-cols-2 lg:grid-cols-6"
         onSubmit={applyFilters}
       >
         <label className="flex flex-col gap-0.5 text-[10px] font-medium text-slate-500">
@@ -188,9 +202,18 @@ export function AuditLogsPage() {
           Action contains
           <input
             className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 font-mono text-[11px]"
-            placeholder="e.g. ws.shutdown, REST POST"
+            placeholder="e.g. command_executed"
             value={actionQ}
             onChange={(e) => setActionQ(e.target.value)}
+          />
+        </label>
+        <label className="flex flex-col gap-0.5 text-[10px] font-medium text-slate-500">
+          Resource type
+          <input
+            className="rounded border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-950 px-1.5 py-1 font-mono text-[11px]"
+            placeholder="device, user, …"
+            value={resourceTypeQ}
+            onChange={(e) => setResourceTypeQ(e.target.value)}
           />
         </label>
         <div className="flex items-end gap-1.5">
@@ -208,7 +231,8 @@ export function AuditLogsPage() {
               setToDate('')
               setUserId('')
               setActionQ('')
-              setApplied({ from: '', to: '', user: '', action: '' })
+              setResourceTypeQ('')
+              setApplied({ from: '', to: '', user: '', action: '', resourceType: '' })
               setOffset(0)
             }}
           >
@@ -252,38 +276,67 @@ export function AuditLogsPage() {
         <table className="w-full border-collapse text-left text-[10px]">
           <thead className="sticky top-0 z-[1] bg-slate-100/95 dark:bg-slate-900/95 text-[9px] font-semibold uppercase tracking-wide text-slate-500 backdrop-blur">
             <tr>
-              <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">Timestamp</th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-0.5 hover:text-slate-800 dark:hover:text-slate-200"
+                  onClick={() => {
+                    setSortDesc((d) => !d)
+                    setOffset(0)
+                  }}
+                  title="Toggle sort order"
+                >
+                  Timestamp {sortDesc ? '↓' : '↑'}
+                </button>
+              </th>
               <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">User</th>
               <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">Action</th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">Resource</th>
               <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">Target</th>
+              <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">IP</th>
               <th className="border-b border-slate-200 dark:border-slate-800 px-1.5 py-1">Details</th>
             </tr>
           </thead>
           <tbody className="font-mono text-slate-800 dark:text-slate-200">
             {rows.length === 0 && !loading ? (
               <tr>
-                <td colSpan={5} className="px-2 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-2 py-6 text-center text-slate-500">
                   No rows
                 </td>
               </tr>
             ) : null}
-            {rows.map((r) => (
-              <tr key={r.id} className="border-b border-slate-200 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-900/50">
-                <td className="whitespace-nowrap px-1.5 py-0.5 text-slate-400">{formatTs(r.timestamp)}</td>
-                <td className="max-w-[8rem] truncate px-1.5 py-0.5" title={r.username ?? r.user_id}>
-                  {r.username ?? r.user_id ?? '—'}
-                </td>
-                <td className="max-w-[14rem] truncate px-1.5 py-0.5 text-emerald-200/90" title={r.action}>
-                  {r.action}
-                </td>
-                <td className="max-w-[10rem] truncate px-1.5 py-0.5 text-slate-400" title={r.target_human_id ?? r.target_asset_id}>
-                  {r.target_human_id ?? r.target_asset_id ?? '—'}
-                </td>
-                <td className="max-w-[24rem] truncate px-1.5 py-0.5 text-slate-500" title={detailsPreview(r.details)}>
-                  {detailsPreview(r.details)}
-                </td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const res =
+                r.resource_type || r.resource_id
+                  ? [r.resource_type, r.resource_id].filter(Boolean).join(' ')
+                  : '—'
+              return (
+                <tr
+                  key={r.id}
+                  className="border-b border-slate-200 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-900/50"
+                >
+                  <td className="whitespace-nowrap px-1.5 py-0.5 text-slate-400">{formatTs(r.timestamp)}</td>
+                  <td className="max-w-[8rem] truncate px-1.5 py-0.5" title={r.username ?? r.user_id}>
+                    {r.username ?? r.user_id ?? '—'}
+                  </td>
+                  <td className="max-w-[12rem] truncate px-1.5 py-0.5 text-emerald-200/90" title={r.action}>
+                    {r.action}
+                  </td>
+                  <td className="max-w-[10rem] truncate px-1.5 py-0.5 text-slate-500" title={res}>
+                    {res}
+                  </td>
+                  <td className="max-w-[8rem] truncate px-1.5 py-0.5 text-slate-400" title={r.target_human_id ?? r.target_asset_id}>
+                    {r.target_human_id ?? r.target_asset_id ?? '—'}
+                  </td>
+                  <td className="max-w-[6rem] truncate px-1.5 py-0.5 text-slate-500" title={r.ip_address}>
+                    {r.ip_address ?? '—'}
+                  </td>
+                  <td className="max-w-[20rem] truncate px-1.5 py-0.5 text-slate-500" title={detailsPreview(r.details)}>
+                    {detailsPreview(r.details)}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

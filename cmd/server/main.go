@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ARCOOON/arx-mdm/internal/bootstrap"
 	"github.com/ARCOOON/arx-mdm/internal/cli"
 	"github.com/ARCOOON/arx-mdm/internal/database"
 	"github.com/ARCOOON/arx-mdm/internal/envfile"
@@ -66,6 +67,29 @@ func newRootCmd(logger *slog.Logger) *cobra.Command {
 		Short: "Run the HTTP/WebSocket MDM server (default when no subcommand is given)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runServe(logger)
+		},
+	}
+
+	setupCmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Bootstrap PKI (root CA if needed), mint server TLS material, migrate database, prompt for initial admin",
+		Long:  "Uses ARX_PKI_STORAGE_PATH (default certs), ARX_DATABASE_URL, and optional ARX_SERVER_DOMAIN (extra DNS SANs for server-cert.pem).",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dsn := strings.TrimSpace(os.Getenv(envDatabaseURL))
+			if dsn == "" {
+				return fmt.Errorf("missing %s", envDatabaseURL)
+			}
+			pkiDir := strings.TrimSpace(os.Getenv(envPKIStoragePath))
+			if pkiDir == "" {
+				pkiDir = "certs"
+			}
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			setupCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+			defer cancel()
+			return bootstrap.RunServerSetup(setupCtx, logger, os.Stdin, os.Stdout, os.Stderr, pkiDir, dsn, connectDatabasePool)
 		},
 	}
 
@@ -140,7 +164,7 @@ func newRootCmd(logger *slog.Logger) *cobra.Command {
 	}
 	pkiCmd.AddCommand(pkiBootstrapCmd)
 
-	root.AddCommand(serveCmd, adminCmd, pkiCmd)
+	root.AddCommand(serveCmd, setupCmd, adminCmd, pkiCmd)
 	return root
 }
 

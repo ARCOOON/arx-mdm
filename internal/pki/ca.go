@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	rootCertFile        = "root-ca.pem"
-	rootKeyFile         = "root-ca.key"
+	rootCertFile         = "root-ca.pem"
+	rootKeyFile          = "root-ca.key"
 	intermediateCertFile = "intermediate-ca.pem"
 	intermediateKeyFile  = "intermediate-ca.key"
 	mtlsClientBundleFile = "mtls-client-ca-bundle.pem"
@@ -48,10 +48,10 @@ type Authority struct {
 
 	storageDir string
 
-	rootCert          *x509.Certificate
-	rootKey           *ecdsa.PrivateKey
-	intermediateCert  *x509.Certificate
-	intermediateKey   *ecdsa.PrivateKey
+	rootCert         *x509.Certificate
+	rootKey          *ecdsa.PrivateKey
+	intermediateCert *x509.Certificate
+	intermediateKey  *ecdsa.PrivateKey
 
 	rootPEM         []byte
 	intermediatePEM []byte
@@ -355,13 +355,13 @@ func (a *Authority) IssueClientCertificate(ctx context.Context, assetID uuid.UUI
 		BasicConstraintsValid: true,
 		IsCA:                  false,
 
-		SubjectKeyId:          leafSKID,
-		AuthorityKeyId:        a.intermediateCert.SubjectKeyId,
-		SignatureAlgorithm:    sigAlg,
-		DNSNames:              dnsNames,
-		IPAddresses:           ipSans,
-		PublicKey:             csr.PublicKey,
-		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
+		SubjectKeyId:       leafSKID,
+		AuthorityKeyId:     a.intermediateCert.SubjectKeyId,
+		SignatureAlgorithm: sigAlg,
+		DNSNames:           dnsNames,
+		IPAddresses:        ipSans,
+		PublicKey:          csr.PublicKey,
+		PublicKeyAlgorithm: csr.PublicKeyAlgorithm,
 	}
 
 	if assetID != uuid.Nil {

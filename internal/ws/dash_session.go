@@ -72,15 +72,15 @@ func RunDashboardSession(r *http.Request, c *dashboardClient, pool *pgxpool.Pool
 		return
 	}
 
-	tickets, err := LoadTicketSnapshot(ctx, pool)
+	incidents, err := LoadIncidentSnapshot(ctx, pool)
 	if err != nil {
 		if logger != nil {
-			logger.Error("dashboard ticket snapshot failed", "err", err, "request_id", r.Header.Get("X-Request-Id"))
+			logger.Error("dashboard incident snapshot failed", "err", err, "request_id", r.Header.Get("X-Request-Id"))
 		}
-		replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "ticket snapshot query failed"})
+		replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "incident snapshot query failed"})
 		return
 	}
-	tickBytes, err := json.Marshal(TicketSnapshotMsg{Type: MsgTypeTicketSnapshot, Tickets: tickets})
+	tickBytes, err := json.Marshal(IncidentSnapshotMsg{Type: MsgTypeIncidentSnapshot, Incidents: incidents})
 	if err != nil {
 		replyJSON(c, CommandResultMsg{Type: MsgTypeCommandResult, OK: false, Message: "ticket snapshot encode failed"})
 		return
@@ -89,7 +89,7 @@ func RunDashboardSession(r *http.Request, c *dashboardClient, pool *pgxpool.Pool
 	case c.send <- tickBytes:
 	case <-time.After(5 * time.Second):
 		if logger != nil {
-			logger.Warn("dashboard ticket snapshot send timed out", "request_id", r.Header.Get("X-Request-Id"))
+			logger.Warn("dashboard incident snapshot send timed out", "request_id", r.Header.Get("X-Request-Id"))
 		}
 		return
 	}

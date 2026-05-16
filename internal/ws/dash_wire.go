@@ -12,11 +12,11 @@ import (
 
 // Dashboard wire message types.
 const (
-	MsgTypeAssetSnapshot   = "asset_snapshot"
-	MsgTypeTicketSnapshot  = "ticket_snapshot"
-	MsgTypeTelemetryUpdate = "telemetry_update"
-	MsgTypeCommandResult   = "command_result"
-	MsgTypePtyStarted      = "pty_started"
+	MsgTypeAssetSnapshot    = "asset_snapshot"
+	MsgTypeIncidentSnapshot = "incident_snapshot"
+	MsgTypeTelemetryUpdate  = "telemetry_update"
+	MsgTypeCommandResult    = "command_result"
+	MsgTypePtyStarted       = "pty_started"
 )
 
 // AssetWire is a compact asset row for the operator dashboard.
@@ -42,21 +42,22 @@ type AssetSnapshotMsg struct {
 	Assets []AssetWire `json:"assets"`
 }
 
-// TicketWire is a compact ticket row for the operator dashboard.
-type TicketWire struct {
-	ID          string  `json:"id"`
-	TicketRef   string  `json:"ticket_ref"`
-	Title       string  `json:"title"`
-	Status      string  `json:"status"`
-	Priority    string  `json:"priority"`
-	LinkedArxID *string `json:"linked_arx_id,omitempty"`
-	CreatedAt   string  `json:"created_at"`
+// IncidentWire is a compact incident row for the operator dashboard.
+type IncidentWire struct {
+	ID               string  `json:"id"`
+	IncidentNumber   string  `json:"incident_number"`
+	ShortDescription string  `json:"short_description"`
+	State            string  `json:"state"`
+	Priority         int     `json:"priority"`
+	SLADue           string  `json:"sla_due"`
+	LinkedArxID      *string `json:"linked_arx_id,omitempty"`
+	CreatedAt        string  `json:"created_at"`
 }
 
-// TicketSnapshotMsg is sent once after the asset snapshot.
-type TicketSnapshotMsg struct {
-	Type    string       `json:"type"`
-	Tickets []TicketWire `json:"tickets"`
+// IncidentSnapshotMsg is sent once after the asset snapshot (incident feed for dashboard).
+type IncidentSnapshotMsg struct {
+	Type      string         `json:"type"`
+	Incidents []IncidentWire `json:"incidents"`
 }
 
 // TelemetryUpdateMsg is pushed after each successful POST /v1/telemetry.

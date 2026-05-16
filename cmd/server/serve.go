@@ -365,7 +365,8 @@ func runServe(logger *slog.Logger) error {
 		},
 	}))
 
-	serverinstall.Register(mux, logger)
+	serverinstall.Register(mux)
+	api.RegisterEmbeddedStaticUI(mux, logger)
 
 	h := auth.MutatingAuditMiddleware(pool, logger, jwtSvc, dashboardOrigins)(mux)
 	h = auth.DashboardRBACMiddleware(jwtSvc, dashboardOrigins)(h)

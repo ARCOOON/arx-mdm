@@ -18,7 +18,10 @@ import (
 
 var assetPathUUID = regexp.MustCompile(`^/v1/assets/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(/|$)`)
 
-var dedicatedRESTAuditSkip = regexp.MustCompile(`^/v1/devices/(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/(commands|assign|unassign|lock|wipe)$`)
+var dedicatedRESTAuditSkip = regexp.MustCompile(
+	`^(/v1/devices/(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/(commands|assign|unassign|lock|wipe)` +
+		`|/v1/incidents/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/commands)$`,
+)
 
 // AuditRecord is the payload for a single audit_logs insert.
 type AuditRecord struct {
@@ -141,7 +144,7 @@ func parsePathResource(path string) (string, *uuid.UUID) {
 	}{
 		{"/v1/devices/", "device"},
 		{"/v1/assets/", "asset"},
-		{"/v1/tickets/", "ticket"},
+		{"/v1/incidents/", "incident"},
 		{"/v1/users/", "user"},
 	}
 	for _, pr := range prefixes {

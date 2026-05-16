@@ -28,10 +28,10 @@ type C2Hub interface {
 
 // PackagesDeps wires the packages and deployments REST API.
 type PackagesDeps struct {
-	Pool    *pgxpool.Pool
-	Logger  *slog.Logger
-	Auth    DashboardAuth
-	C2Hub   C2Hub
+	Pool   *pgxpool.Pool
+	Logger *slog.Logger
+	Auth   DashboardAuth
+	C2Hub  C2Hub
 }
 
 var allowedPackageTypes = map[string]struct{}{
@@ -83,13 +83,13 @@ func parsePackageUUIDParam(r *http.Request) (uuid.UUID, error) {
 // --- packages ---
 
 type packageWire struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Version     string    `json:"version"`
-	Type        string    `json:"type"`
-	InstallCmd  string    `json:"install_cmd"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	Version    string    `json:"version"`
+	Type       string    `json:"type"`
+	InstallCmd string    `json:"install_cmd"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type createPackageRequest struct {
@@ -533,13 +533,13 @@ UPDATE deployments SET status = 'failed', error_message = $2, updated_at = now()
 `, depID, dispatchErr)
 		} else {
 			payload := map[string]any{
-				"action":          "deploy_package",
-				"deployment_id":   depID.String(),
-				"operation":       op,
-				"package_type":    pkg.Type,
-				"name":            pkg.Name,
-				"version":         pkg.Version,
-				"install_cmd":     pkg.InstallCmd,
+				"action":        "deploy_package",
+				"deployment_id": depID.String(),
+				"operation":     op,
+				"package_type":  pkg.Type,
+				"name":          pkg.Name,
+				"version":       pkg.Version,
+				"install_cmd":   pkg.InstallCmd,
 			}
 			if err := h.deps.C2Hub.DispatchJSONByHumanID(ctx, h.deps.Pool, req.AssetHumanID, payload); err != nil {
 				dispatchErr = err.Error()

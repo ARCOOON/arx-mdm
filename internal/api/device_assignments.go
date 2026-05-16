@@ -37,9 +37,9 @@ type assignDeviceBody struct {
 
 // DeviceAssignmentWire is the current custodian snapshot for GET /v1/devices/{id}/assignment.
 type DeviceAssignmentWire struct {
-	UserID      uuid.UUID `json:"user_id"`
-	Username    string    `json:"username"`
-	AssignedAt  time.Time `json:"assigned_at"`
+	UserID     uuid.UUID `json:"user_id"`
+	Username   string    `json:"username"`
+	AssignedAt time.Time `json:"assigned_at"`
 }
 
 // RegisterDeviceAssignmentRoutes registers POST assign/unassign and GET current assignment for a device UUID.
@@ -214,7 +214,7 @@ WHERE d.asset_id = $1
 	}
 
 	details := map[string]any{
-		"assigned_user_id":   wire.UserID.String(),
+		"assigned_user_id":  wire.UserID.String(),
 		"assigned_username": wire.Username,
 	}
 	auditCtx, auditCancel := context.WithTimeout(context.Background(), 5*time.Second)

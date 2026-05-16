@@ -20,9 +20,9 @@ const maxUserAdminJSON = 32 << 10
 
 // UsersAdminDeps wires admin-only user management routes.
 type UsersAdminDeps struct {
-	Pool    *pgxpool.Pool
-	Logger  *slog.Logger
-	Auth    DashboardAuth
+	Pool   *pgxpool.Pool
+	Logger *slog.Logger
+	Auth   DashboardAuth
 }
 
 type userAdminWire struct {

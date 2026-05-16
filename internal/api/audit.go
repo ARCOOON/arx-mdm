@@ -23,17 +23,17 @@ type AuditDeps struct {
 }
 
 type auditListItem struct {
-	ID              uuid.UUID       `json:"id"`
-	Timestamp       time.Time       `json:"timestamp"`
-	UserID          *uuid.UUID      `json:"user_id,omitempty"`
-	Username        *string         `json:"username,omitempty"`
-	Action          string          `json:"action"`
-	ResourceType    string          `json:"resource_type,omitempty"`
-	ResourceID      *uuid.UUID      `json:"resource_id,omitempty"`
-	TargetAssetID   *uuid.UUID      `json:"target_asset_id,omitempty"`
-	TargetHumanID   *string         `json:"target_human_id,omitempty"`
-	IPAddress       *string         `json:"ip_address,omitempty"`
-	Details         json.RawMessage `json:"details,omitempty"`
+	ID            uuid.UUID       `json:"id"`
+	Timestamp     time.Time       `json:"timestamp"`
+	UserID        *uuid.UUID      `json:"user_id,omitempty"`
+	Username      *string         `json:"username,omitempty"`
+	Action        string          `json:"action"`
+	ResourceType  string          `json:"resource_type,omitempty"`
+	ResourceID    *uuid.UUID      `json:"resource_id,omitempty"`
+	TargetAssetID *uuid.UUID      `json:"target_asset_id,omitempty"`
+	TargetHumanID *string         `json:"target_human_id,omitempty"`
+	IPAddress     *string         `json:"ip_address,omitempty"`
+	Details       json.RawMessage `json:"details,omitempty"`
 }
 
 type auditListResponse struct {

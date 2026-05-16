@@ -114,9 +114,9 @@ func (h *filesHandler) handleDownload(w http.ResponseWriter, r *http.Request) {
 	defer unregister()
 
 	if !h.deps.DispatchJSON(certSerial, map[string]any{
-		"action":      "fs_download",
-		"request_id":  requestID,
-		"path":        path,
+		"action":     "fs_download",
+		"request_id": requestID,
+		"path":       path,
 		"chunk_size": maxFileProxyChunk,
 	}) {
 		writeTicketsError(w, http.StatusServiceUnavailable, "agent is not connected")

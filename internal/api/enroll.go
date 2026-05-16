@@ -50,8 +50,8 @@ func RegisterEnrollAndroidRoutes(mux *http.ServeMux, d EnrollAndroidDeps) {
 
 // EnrollPublicDeps wires unauthenticated agent enrollment (CSR + presentation token).
 type EnrollPublicDeps struct {
-	Logger        *slog.Logger
-	Coordinator   *auth.EnrollmentCoordinator
+	Logger      *slog.Logger
+	Coordinator *auth.EnrollmentCoordinator
 }
 
 type enrollAgentRequest struct {

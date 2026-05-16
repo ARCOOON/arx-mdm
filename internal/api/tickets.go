@@ -64,20 +64,20 @@ func ticketSequenceName(kind string) (string, error) {
 
 // TicketListRow is returned by GET /v1/tickets.
 type TicketListRow struct {
-	ID                    uuid.UUID   `json:"id"`
-	TicketRef             string      `json:"ticket_ref"`
-	Title                 string      `json:"title"`
-	Description           string      `json:"description"`
-	Status                string      `json:"status"`
-	Priority              string      `json:"priority"`
-	LinkedArxID           *string     `json:"linked_arx_id,omitempty"`
-	DeviceID              *uuid.UUID  `json:"device_id,omitempty"`
-	CreatedAt             time.Time   `json:"created_at"`
-	UpdatedAt             time.Time   `json:"updated_at"`
-	CreatedByUserID       *uuid.UUID  `json:"created_by,omitempty"`
-	CreatedByUsername     *string     `json:"created_by_username,omitempty"`
-	AssignedToUserID      *uuid.UUID  `json:"assigned_to,omitempty"`
-	AssignedToUsername    *string     `json:"assigned_to_username,omitempty"`
+	ID                 uuid.UUID  `json:"id"`
+	TicketRef          string     `json:"ticket_ref"`
+	Title              string     `json:"title"`
+	Description        string     `json:"description"`
+	Status             string     `json:"status"`
+	Priority           string     `json:"priority"`
+	LinkedArxID        *string    `json:"linked_arx_id,omitempty"`
+	DeviceID           *uuid.UUID `json:"device_id,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	CreatedByUserID    *uuid.UUID `json:"created_by,omitempty"`
+	CreatedByUsername  *string    `json:"created_by_username,omitempty"`
+	AssignedToUserID   *uuid.UUID `json:"assigned_to,omitempty"`
+	AssignedToUsername *string    `json:"assigned_to_username,omitempty"`
 }
 
 // TicketDetailResponse is returned by GET /v1/tickets/{id}.
@@ -87,23 +87,23 @@ type TicketDetailResponse struct {
 }
 
 type createTicketRequest struct {
-	Kind                 string `json:"kind"`
-	Title                string `json:"title"`
-	Description          string `json:"description"`
-	Status               string `json:"status"`
-	Priority             string `json:"priority"`
-	LinkedAssetHumanID   string `json:"linked_asset_human_id"`
-	AssignedToUserID     string `json:"assigned_to_user_id"`
+	Kind               string `json:"kind"`
+	Title              string `json:"title"`
+	Description        string `json:"description"`
+	Status             string `json:"status"`
+	Priority           string `json:"priority"`
+	LinkedAssetHumanID string `json:"linked_asset_human_id"`
+	AssignedToUserID   string `json:"assigned_to_user_id"`
 }
 
 type patchTicketRequest struct {
-	Title                *string `json:"title"`
-	Description          *string `json:"description"`
-	Status               *string `json:"status"`
-	Priority             *string `json:"priority"`
-	LinkedAssetHumanID   *string `json:"linked_asset_human_id"`
-	AssignedToUserID     *string `json:"assigned_to_user_id"`
-	ClearAssignedTo      *bool   `json:"clear_assigned_to"`
+	Title              *string `json:"title"`
+	Description        *string `json:"description"`
+	Status             *string `json:"status"`
+	Priority           *string `json:"priority"`
+	LinkedAssetHumanID *string `json:"linked_asset_human_id"`
+	AssignedToUserID   *string `json:"assigned_to_user_id"`
+	ClearAssignedTo    *bool   `json:"clear_assigned_to"`
 }
 
 type createResolutionRequest struct {

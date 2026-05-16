@@ -25,10 +25,10 @@ const maxDeviceCommandPayloadBytes = 64 * 1024
 
 // DeviceCommandsDeps wires REST device command routes and C2 dispatch.
 type DeviceCommandsDeps struct {
-	Pool       *pgxpool.Pool
-	Logger     *slog.Logger
-	Auth       DashboardAuth
-	Dispatch   func(certSerial string, payload any) bool
+	Pool         *pgxpool.Pool
+	Logger       *slog.Logger
+	Auth         DashboardAuth
+	Dispatch     func(certSerial string, payload any) bool
 	ResolveAsset func(ctx context.Context, deviceID uuid.UUID) (certSerial string, err error)
 }
 

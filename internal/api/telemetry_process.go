@@ -3,10 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 
 	"github.com/ARCOOON/arx-mdm/internal/database"
+	"github.com/ARCOOON/arx-mdm/internal/mdm/compliance"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,10 +23,12 @@ type TelemetryProcessResult struct {
 
 // TelemetryProcessDeps configures shared telemetry persistence (HTTP and WebSocket).
 type TelemetryProcessDeps struct {
-	Pool            *pgxpool.Pool
-	AdvisoryLockKey int64
-	OnHeartbeat     func(ctx context.Context, assetID uuid.UUID)
-	OnAccepted      func(certSerial, humanID string, assetID uuid.UUID, payload TelemetryPayload)
+	Pool               *pgxpool.Pool
+	AdvisoryLockKey    int64
+	Logger             *slog.Logger
+	OnHeartbeat        func(ctx context.Context, assetID uuid.UUID)
+	OnAccepted         func(certSerial, humanID string, assetID uuid.UUID, payload TelemetryPayload)
+	ComplianceDispatch func(certSerial string, payload any) bool
 }
 
 // ProcessTelemetry validates payload, upserts the asset row, and builds the agent response map.
@@ -68,6 +72,21 @@ func ProcessTelemetry(ctx context.Context, d TelemetryProcessDeps, certSerial st
 		return zero, fmt.Errorf("persist device metrics: %w", err)
 	}
 
+	platformKey := strings.ToLower(strings.TrimSpace(deriveAssetOsType(payload)))
+	var enf *compliance.EnforcementWire
+	if payload.MDMPolicyEnforcement != nil {
+		e := payload.MDMPolicyEnforcement
+		enf = &compliance.EnforcementWire{
+			State:          e.State,
+			Detail:         e.Detail,
+			CriticalFailed: e.CriticalFailed,
+		}
+	}
+	dispatch := complianceDispatchAdapter(d.ComplianceDispatch)
+	if err := compliance.EvaluateAfterTelemetry(ctx, d.Pool, dispatch, d.Logger, assetID, humanID, certSerial, platformKey, enf); err != nil {
+		return zero, fmt.Errorf("compliance evaluation: %w", err)
+	}
+
 	if d.OnHeartbeat != nil {
 		d.OnHeartbeat(ctx, assetID)
 	}
@@ -83,10 +102,31 @@ func ProcessTelemetry(ctx context.Context, d TelemetryProcessDeps, certSerial st
 	if err := AppendAndroidPolicyToTelemetryResponse(ctx, d.Pool, assetID, osType, resp); err != nil {
 		return zero, fmt.Errorf("android policy attachment: %w", err)
 	}
+	if err := AppendMDMDownlink(ctx, d.Pool, assetID, osType, resp); err != nil {
+		return zero, fmt.Errorf("mdm downlink attachment: %w", err)
+	}
 
 	return TelemetryProcessResult{
 		AssetID:  assetID,
 		HumanID:  humanID,
 		Response: resp,
 	}, nil
+}
+
+type telemetryComplianceBridge struct {
+	fn func(certSerial string, payload any) bool
+}
+
+func (t telemetryComplianceBridge) DispatchJSON(certSerial string, payload any) bool {
+	if t.fn == nil {
+		return false
+	}
+	return t.fn(certSerial, payload)
+}
+
+func complianceDispatchAdapter(fn func(certSerial string, payload any) bool) compliance.C2Dispatcher {
+	if fn == nil {
+		return nil
+	}
+	return telemetryComplianceBridge{fn: fn}
 }

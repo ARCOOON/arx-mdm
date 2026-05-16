@@ -164,6 +164,20 @@ func (h *deviceCommandsHandler) handleCreate(w http.ResponseWriter, r *http.Requ
 			writeTicketsError(w, http.StatusBadRequest, "push_config payload must be JSON")
 			return
 		}
+	case models.DeviceCommandTypeQuarantine:
+		if strings.TrimSpace(payload) == "" {
+			writeTicketsError(w, http.StatusBadRequest, "quarantine requires JSON payload")
+			return
+		}
+		if len(payload) > maxDeviceCommandPayloadBytes {
+			writeTicketsError(w, http.StatusBadRequest, fmt.Sprintf("quarantine payload exceeds %d bytes", maxDeviceCommandPayloadBytes))
+			return
+		}
+		var probe map[string]any
+		if err := json.Unmarshal([]byte(payload), &probe); err != nil {
+			writeTicketsError(w, http.StatusBadRequest, "quarantine payload must be JSON")
+			return
+		}
 	case models.DeviceCommandTypePing, models.DeviceCommandTypeReboot:
 		if strings.TrimSpace(payload) != "" {
 			writeTicketsError(w, http.StatusBadRequest, "payload is not used for ping or reboot commands")

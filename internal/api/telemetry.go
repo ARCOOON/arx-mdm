@@ -25,23 +25,31 @@ type TelemetryInstalledApp struct {
 	ID      string `json:"id,omitempty"`
 }
 
+// MDMPolicyEnforcementWire reports declarative enforcement status from agents (telemetry uplink).
+type MDMPolicyEnforcementWire struct {
+	State          string `json:"state"`
+	Detail         string `json:"detail,omitempty"`
+	CriticalFailed bool   `json:"critical_failed,omitempty"`
+}
+
 // TelemetryPayload is the JSON body sent by the agent for heartbeat/telemetry.
 type TelemetryPayload struct {
-	Hostname           string                  `json:"hostname"`
-	OsType             string                  `json:"os_type,omitempty"`
-	OSFamily           string                  `json:"os_family"`
-	OSVersion          string                  `json:"os_version"`
-	TotalRAMBytes      uint64                  `json:"total_ram_bytes"`
-	CPUModel           string                  `json:"cpu_model"`
-	CPULogicalCores    int                     `json:"cpu_logical_cores"`
-	CPUUsagePercent    float64                 `json:"cpu_usage_percent,omitempty"`
-	MemoryUsedBytes    uint64                  `json:"memory_used_bytes,omitempty"`
-	RootDiskTotalBytes uint64                  `json:"root_disk_total_bytes,omitempty"`
-	RootDiskUsedBytes  uint64                  `json:"root_disk_used_bytes,omitempty"`
-	BatteryPercent     float64                 `json:"battery_percent,omitempty"`
-	DeviceModel        string                  `json:"device_model,omitempty"`
-	MACAddress         string                  `json:"mac_address,omitempty"`
-	InstalledSoftware  []TelemetryInstalledApp `json:"installed_software"`
+	Hostname             string                    `json:"hostname"`
+	OsType               string                    `json:"os_type,omitempty"`
+	OSFamily             string                    `json:"os_family"`
+	OSVersion            string                    `json:"os_version"`
+	TotalRAMBytes        uint64                    `json:"total_ram_bytes"`
+	CPUModel             string                    `json:"cpu_model"`
+	CPULogicalCores      int                       `json:"cpu_logical_cores"`
+	CPUUsagePercent      float64                   `json:"cpu_usage_percent,omitempty"`
+	MemoryUsedBytes      uint64                    `json:"memory_used_bytes,omitempty"`
+	RootDiskTotalBytes   uint64                    `json:"root_disk_total_bytes,omitempty"`
+	RootDiskUsedBytes    uint64                    `json:"root_disk_used_bytes,omitempty"`
+	BatteryPercent       float64                   `json:"battery_percent,omitempty"`
+	DeviceModel          string                    `json:"device_model,omitempty"`
+	MACAddress           string                    `json:"mac_address,omitempty"`
+	InstalledSoftware    []TelemetryInstalledApp   `json:"installed_software"`
+	MDMPolicyEnforcement *MDMPolicyEnforcementWire `json:"mdm_policy_enforcement,omitempty"`
 }
 
 // TelemetryDeps carries dependencies for the telemetry HTTP handler.
@@ -50,6 +58,8 @@ type TelemetryDeps struct {
 	Logger          *slog.Logger
 	MTLSRequired    bool // false when server is not running with TLS + client CA configured
 	AdvisoryLockKey int64
+	// ComplianceDispatch delivers automatic quarantine commands when mutual TLS sessions are online (optional).
+	ComplianceDispatch func(certSerial string, payload any) bool
 	// OnTelemetryAccepted is invoked after a successful upsert (optional). Used by the dashboard broadcaster.
 	OnTelemetryAccepted func(certSerial, humanID string, assetID uuid.UUID, payload TelemetryPayload)
 	// OnHeartbeat is invoked after a successful upsert (optional). Used to clear stale-heartbeat alert state.
@@ -117,10 +127,12 @@ func NewTelemetryHandler(d TelemetryDeps) http.HandlerFunc {
 		defer cancel()
 
 		result, err := ProcessTelemetry(ctx, TelemetryProcessDeps{
-			Pool:            d.Pool,
-			AdvisoryLockKey: d.AdvisoryLockKey,
-			OnHeartbeat:     d.OnHeartbeat,
-			OnAccepted:      d.OnTelemetryAccepted,
+			Pool:               d.Pool,
+			AdvisoryLockKey:    d.AdvisoryLockKey,
+			OnHeartbeat:        d.OnHeartbeat,
+			OnAccepted:         d.OnTelemetryAccepted,
+			ComplianceDispatch: d.ComplianceDispatch,
+			Logger:             d.Logger,
 		}, serial, payload)
 		if err != nil {
 			d.Logger.Error("telemetry upsert failed",

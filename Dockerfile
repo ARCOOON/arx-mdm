@@ -17,11 +17,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY --from=frontend /web/dist ./internal/serverinstall/dashboard
+COPY --from=frontend /web/dist ./internal/api/webui/dist
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./internal/serverinstall/arx-agent-linux ./cmd/agent \
 	&& CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./internal/serverinstall/arx-agent-windows.exe ./cmd/agent \
-	&& CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags embedbins -o /out/arx-server ./cmd/server
+	&& CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -tags embedbins,embedui -o /out/arx-server ./cmd/server
 
 # --- Stage 3: minimal runtime image
 FROM alpine:3.21

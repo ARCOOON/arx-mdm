@@ -1,4 +1,4 @@
-.PHONY: build-all build-server build-agent-linux build-agent-windows build-agent-android clean sync-install-scripts
+.PHONY: build-all build-web build-server build-agent-linux build-agent-windows build-agent-android clean sync-install-scripts
 
 BUILD_DIR := build
 GOFLAGS := -trimpath -ldflags="-s -w"
@@ -16,8 +16,14 @@ sync-install-scripts:
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-build-server: $(BUILD_DIR)
-	CGO_ENABLED=0 go build $(GOFLAGS) -o $(BUILD_DIR)/arx-server $(SERVER_PKG)
+build-web:
+	cd web && npm install && npm run build
+	rm -rf internal/api/webui/dist
+	mkdir -p internal/api/webui/dist
+	cp -r web/dist/. internal/api/webui/dist/
+
+build-server: sync-install-scripts build-web $(BUILD_DIR)
+	CGO_ENABLED=0 go build $(GOFLAGS) -tags embedui -o $(BUILD_DIR)/arx-server $(SERVER_PKG)
 
 build-agent-linux: $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -o $(BUILD_DIR)/arx-agent-linux $(AGENT_PKG)

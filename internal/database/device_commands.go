@@ -31,12 +31,18 @@ func InsertDeviceCommand(ctx context.Context, pool *pgxpool.Pool, deviceID uuid.
 	payload = strings.TrimSpace(payload)
 	if commandType == models.DeviceCommandTypeScript ||
 		commandType == models.DeviceCommandTypeRestartService ||
-		commandType == models.DeviceCommandTypePushConfig {
+		commandType == models.DeviceCommandTypePushConfig ||
+		commandType == models.DeviceCommandTypeQuarantine {
 		if payload == "" {
 			return models.DeviceCommand{}, fmt.Errorf("database: payload required for command_type %s", commandType)
 		}
 	} else if payload != "" {
-		return models.DeviceCommand{}, fmt.Errorf("database: payload only allowed for script, restart_service, and push_config")
+		return models.DeviceCommand{}, fmt.Errorf("database: payload only allowed for script, restart_service, push_config, and quarantine")
+	}
+	if commandType == models.DeviceCommandTypeQuarantine {
+		if err := validateQuarantineCommandPayload(payload); err != nil {
+			return models.DeviceCommand{}, err
+		}
 	}
 
 	var cmd models.DeviceCommand
@@ -224,11 +230,71 @@ WHERE id = $1
 func validateDeviceCommandType(t string) error {
 	switch t {
 	case models.DeviceCommandTypePing, models.DeviceCommandTypeReboot, models.DeviceCommandTypeScript,
-		models.DeviceCommandTypeRestartService, models.DeviceCommandTypePushConfig:
+		models.DeviceCommandTypeRestartService, models.DeviceCommandTypePushConfig,
+		models.DeviceCommandTypeQuarantine:
 		return nil
 	default:
 		return fmt.Errorf("database: invalid command_type %q", t)
 	}
+}
+
+func validateQuarantineCommandPayload(payload string) error {
+	var probe struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := json.Unmarshal([]byte(payload), &probe); err != nil {
+		return fmt.Errorf("database: quarantine payload must be JSON with enabled boolean")
+	}
+	return nil
+}
+
+// PendingDeviceCommandDispatch is a queued instruction awaiting delivery over C2.
+type PendingDeviceCommandDispatch struct {
+	Command models.DeviceCommand `json:"command"`
+	HumanID string               `json:"human_id"`
+}
+
+// ListPendingDeviceCommandsForCertSerial returns oldest-first pending commands for the enrolling certificate.
+func ListPendingDeviceCommandsForCertSerial(ctx context.Context, pool *pgxpool.Pool, certSerial string, limit int) ([]PendingDeviceCommandDispatch, error) {
+	if pool == nil {
+		return nil, errors.New("database: pool is required")
+	}
+	certSerial = strings.TrimSpace(certSerial)
+	if certSerial == "" {
+		return nil, errors.New("database: cert serial required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	rows, err := pool.Query(ctx, `
+SELECT d.id, d.device_id, d.command_type, COALESCE(d.payload, ''), d.status, COALESCE(d.output, ''),
+       d.created_at, d.completed_at, a.human_id
+FROM device_commands d
+JOIN assets a ON a.id = d.device_id
+WHERE a.cert_serial = $1 AND d.status = $2
+ORDER BY d.created_at ASC
+LIMIT $3
+`, certSerial, models.DeviceCommandStatusPending, limit)
+	if err != nil {
+		return nil, fmt.Errorf("database: list pending device commands: %w", err)
+	}
+	defer rows.Close()
+	var out []PendingDeviceCommandDispatch
+	for rows.Next() {
+		var cmd models.DeviceCommand
+		var hid string
+		if err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.CommandType, &cmd.Payload, &cmd.Status, &cmd.Output,
+			&cmd.CreatedAt, &cmd.CompletedAt, &hid,
+		); err != nil {
+			return nil, fmt.Errorf("database: scan pending command: %w", err)
+		}
+		out = append(out, PendingDeviceCommandDispatch{Command: cmd, HumanID: hid})
+	}
+	return out, rows.Err()
 }
 
 func validateDeviceCommandStatus(s string) error {

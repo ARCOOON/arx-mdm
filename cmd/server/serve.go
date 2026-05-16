@@ -172,26 +172,40 @@ func runServe(logger *slog.Logger) error {
 
 	dashAuth := api.DashboardAuth{JWT: jwtSvc, Origins: dashboardOrigins}
 
+	complianceDispatch := func(certSerial string, payload any) bool {
+		return c2Hub.DispatchJSON(certSerial, payload)
+	}
+	onTelemetryAccepted := func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
+		msg, err := ws.MarshalTelemetryUpdate(pool, c2Hub, certSerial, humanID, assetID, payload)
+		if err != nil {
+			return
+		}
+		dashHub.Broadcast(msg)
+	}
+	telemetryProcess := api.TelemetryProcessDeps{
+		Pool:               pool,
+		AdvisoryLockKey:    api.AdvisoryLockKeyARXClientSeq,
+		Logger:             logger,
+		ComplianceDispatch: complianceDispatch,
+		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
+			alertEngine.OnHeartbeat(ctx, assetID)
+		},
+		OnAccepted: onTelemetryAccepted,
+	}
+
 	mux := http.NewServeMux()
 	api.RegisterPublicEnrollRoute(mux, api.EnrollPublicDeps{
 		Logger:      logger,
 		Coordinator: coordinator,
 	})
 	mux.HandleFunc("POST /v1/telemetry", api.NewTelemetryHandler(api.TelemetryDeps{
-		Pool:            pool,
-		Logger:          logger,
-		MTLSRequired:    mtlsReady,
-		AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
-		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
-			alertEngine.OnHeartbeat(ctx, assetID)
-		},
-		OnTelemetryAccepted: func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
-			msg, err := ws.MarshalTelemetryUpdate(c2Hub, certSerial, humanID, assetID, payload)
-			if err != nil {
-				return
-			}
-			dashHub.Broadcast(msg)
-		},
+		Pool:               pool,
+		Logger:             logger,
+		MTLSRequired:       mtlsReady,
+		AdvisoryLockKey:    api.AdvisoryLockKeyARXClientSeq,
+		ComplianceDispatch: complianceDispatch,
+		OnHeartbeat:        telemetryProcess.OnHeartbeat,
+		OnTelemetryAccepted: telemetryProcess.OnAccepted,
 	}))
 
 	api.RegisterAuthRoutes(mux, api.AuthDeps{
@@ -302,10 +316,19 @@ func runServe(logger *slog.Logger) error {
 			return api.ResolveAssetCertSerial(ctx, pool, deviceID)
 		},
 	})
-	api.RegisterDeviceMetricsRoutes(mux, api.DeviceMetricsDeps{
+	api.RegisterTenantComplianceRoutes(mux, api.TenantComplianceDeps{
 		Pool:   pool,
 		Logger: logger,
 		Auth:   dashAuth,
+	})
+	api.RegisterDeviceQuarantineRoutes(mux, api.DeviceQuarantineDeps{
+		Pool:     pool,
+		Logger:   logger,
+		Auth:     dashAuth,
+		Dispatch: c2Hub.DispatchJSON,
+		ResolveAsset: func(ctx context.Context, deviceID uuid.UUID) (string, error) {
+			return api.ResolveAssetCertSerial(ctx, pool, deviceID)
+		},
 	})
 
 	api.RegisterDeviceAssignmentRoutes(mux, api.DeviceAssignmentsDeps{
@@ -320,12 +343,40 @@ func runServe(logger *slog.Logger) error {
 		MTLSRequired: mtlsReady,
 		AppsRoot:     appsAbs,
 	})
+	api.RegisterAgentProfilesRoutes(mux, api.AgentProfilesDeps{
+		Pool:         pool,
+		Logger:       logger,
+		MTLSRequired: mtlsReady,
+	})
+	epDeps := api.EffectivePolicyDeps{
+		Pool:         pool,
+		Logger:       logger,
+		Auth:         dashAuth,
+		MTLSRequired: mtlsReady,
+	}
+	api.RegisterEffectivePolicyRoutes(mux, epDeps)
+	api.RegisterAgentEffectivePolicyRoutes(mux, epDeps)
 	api.RegisterAppCatalogRoutes(mux, api.AppCatalogDeps{
 		Pool:     pool,
 		Logger:   logger,
 		Auth:     dashAuth,
 		C2Hub:    c2Hub,
 		AppsRoot: appsAbs,
+	})
+	api.RegisterManagedAppConfigurationRoutes(mux, api.AppManagedConfigDeps{
+		Pool:   pool,
+		Logger: logger,
+		Auth:   dashAuth,
+	})
+	api.RegisterConfigurationProfilesRoutes(mux, api.ConfigurationProfilesDeps{
+		Pool:   pool,
+		Logger: logger,
+		Auth:   dashAuth,
+	})
+	api.RegisterPrincipalGroupRoutes(mux, api.PrincipalGroupsDeps{
+		Pool:   pool,
+		Logger: logger,
+		Auth:   dashAuth,
 	})
 
 	api.NewFilesHandler(mux, api.FilesDeps{
@@ -337,21 +388,6 @@ func runServe(logger *slog.Logger) error {
 		RegisterFSUploadResultWaiter: c2Hub.RegisterFSUploadResultWaiter,
 	})
 
-	telemetryProcess := api.TelemetryProcessDeps{
-		Pool:            pool,
-		AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
-		OnHeartbeat: func(ctx context.Context, assetID uuid.UUID) {
-			alertEngine.OnHeartbeat(ctx, assetID)
-		},
-		OnAccepted: func(certSerial, humanID string, assetID uuid.UUID, payload api.TelemetryPayload) {
-			msg, err := ws.MarshalTelemetryUpdate(c2Hub, certSerial, humanID, assetID, payload)
-			if err != nil {
-				return
-			}
-			dashHub.Broadcast(msg)
-		},
-	}
-
 	mux.HandleFunc("GET /v1/ws", ws.NewWSGatewayHandler(ws.WSGatewayDeps{
 		C2Hub:            c2Hub,
 		DashboardHub:     dashHub,
@@ -361,11 +397,12 @@ func runServe(logger *slog.Logger) error {
 		DashboardJWT:     jwtSvc,
 		DashboardOrigins: dashboardOrigins,
 		AgentTelemetry: ws.AgentTelemetryDeps{
-			Pool:            pool,
-			Logger:          logger,
-			AdvisoryLockKey: api.AdvisoryLockKeyARXClientSeq,
-			OnHeartbeat:     telemetryProcess.OnHeartbeat,
-			OnAccepted:      telemetryProcess.OnAccepted,
+			Pool:               pool,
+			Logger:             logger,
+			AdvisoryLockKey:    api.AdvisoryLockKeyARXClientSeq,
+			ComplianceDispatch: telemetryProcess.ComplianceDispatch,
+			OnHeartbeat:        telemetryProcess.OnHeartbeat,
+			OnAccepted:         telemetryProcess.OnAccepted,
 		},
 	}))
 

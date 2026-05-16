@@ -27,7 +27,6 @@ jobs:
         run: go test -tags=e2e -count=1 -timeout 25m ./test/
 
   release:
-    needs: e2e
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

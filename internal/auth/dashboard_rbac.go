@@ -114,6 +114,9 @@ func operatorForbidden(method, path string) bool {
 			return true
 		}
 	case strings.HasPrefix(p, "/v1/alerts/"):
+		if p == "/v1/alerts/active" && method == http.MethodGet {
+			return false
+		}
 		return true
 	case method == http.MethodDelete && strings.HasPrefix(p, "/v1/packages/"):
 		return true

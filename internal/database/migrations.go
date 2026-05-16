@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -43,7 +44,7 @@ func loadMigrations() ([]migration, error) {
 		if err != nil {
 			return nil, fmt.Errorf("migration filename %q: invalid version", e.Name())
 		}
-		b, err := migrationFiles.ReadFile(filepath.Join("migrations", e.Name()))
+		b, err := migrationFiles.ReadFile(path.Join("migrations", e.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("read migration %s: %w", e.Name(), err)
 		}

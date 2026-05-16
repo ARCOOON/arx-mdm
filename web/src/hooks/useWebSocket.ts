@@ -80,6 +80,7 @@ function parseServerMessage(raw: unknown): ServerMessage | null {
     case 'telemetry_update':
     case 'command_result':
     case 'android_policy_updated':
+    case 'device_command_update':
       return o as ServerMessage
     default:
       return null

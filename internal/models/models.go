@@ -60,24 +60,24 @@ type EnrollmentToken struct {
 
 // Package is a catalog entry for software that can be deployed to managed assets.
 type Package struct {
-	ID          uuid.UUID `json:"id" db:"id"`
-	Name        string    `json:"name" db:"name"`
-	Version     string    `json:"version" db:"version"`
-	Type        string    `json:"type" db:"type"`
-	InstallCmd  string    `json:"install_cmd" db:"install_cmd"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	ID         uuid.UUID `json:"id" db:"id"`
+	Name       string    `json:"name" db:"name"`
+	Version    string    `json:"version" db:"version"`
+	Type       string    `json:"type" db:"type"`
+	InstallCmd string    `json:"install_cmd" db:"install_cmd"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Deployment records an assignment of a catalog package to an asset and its lifecycle status.
 type Deployment struct {
-	ID            uuid.UUID  `json:"id" db:"id"`
-	AssetID       uuid.UUID  `json:"asset_id" db:"asset_id"`
-	PackageID     uuid.UUID  `json:"package_id" db:"package_id"`
-	Status        string     `json:"status" db:"status"`
-	ErrorMessage  *string    `json:"error_message,omitempty" db:"error_message"`
-	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
+	ID           uuid.UUID `json:"id" db:"id"`
+	AssetID      uuid.UUID `json:"asset_id" db:"asset_id"`
+	PackageID    uuid.UUID `json:"package_id" db:"package_id"`
+	Status       string    `json:"status" db:"status"`
+	ErrorMessage *string   `json:"error_message,omitempty" db:"error_message"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // User is a dashboard account with a bcrypt password hash (never serialized as JSON).
@@ -100,11 +100,11 @@ type Document struct {
 
 // AndroidPolicy is persisted DPC policy for an Android-managed asset (one row per asset).
 type AndroidPolicy struct {
-	AssetID              uuid.UUID `json:"asset_id" db:"asset_id"`
-	CameraDisabled       bool      `json:"camera_disabled" db:"camera_disabled"`
-	ScreenLockTimeoutMs  int64     `json:"screen_lock_timeout_ms" db:"screen_lock_timeout_ms"`
-	WipeRequested        bool      `json:"wipe_requested" db:"wipe_requested"`
-	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
+	AssetID             uuid.UUID `json:"asset_id" db:"asset_id"`
+	CameraDisabled      bool      `json:"camera_disabled" db:"camera_disabled"`
+	ScreenLockTimeoutMs int64     `json:"screen_lock_timeout_ms" db:"screen_lock_timeout_ms"`
+	WipeRequested       bool      `json:"wipe_requested" db:"wipe_requested"`
+	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // AuditLog is an append-only operator or system action record (REST mutation or C&C dispatch).

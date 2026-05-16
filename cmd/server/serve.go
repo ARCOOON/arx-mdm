@@ -20,6 +20,7 @@ import (
 	"github.com/ARCOOON/arx-mdm/internal/auth"
 	"github.com/ARCOOON/arx-mdm/internal/backup"
 	"github.com/ARCOOON/arx-mdm/internal/database"
+	"github.com/ARCOOON/arx-mdm/internal/itsm"
 	"github.com/ARCOOON/arx-mdm/internal/notifications"
 	"github.com/ARCOOON/arx-mdm/internal/pki"
 	"github.com/ARCOOON/arx-mdm/internal/scheduler"
@@ -121,11 +122,13 @@ func runServe(logger *slog.Logger) error {
 	bgWorkersCtx, bgWorkersCancel := context.WithCancel(context.Background())
 	notifDispatcher := notifications.NewDispatcher(pool, logger)
 	notifDispatcher.Start(bgWorkersCtx)
+	incidentHooks := &itsm.IncidentAlertBridge{Pool: pool, Log: logger}
 	alertEngine := alerting.NewEngine(alerting.Dependencies{
-		Pool:         pool,
-		Logger:       logger,
-		Dispatcher:   notifDispatcher,
-		TickInterval: 30 * time.Second,
+		Pool:          pool,
+		Logger:        logger,
+		Dispatcher:    notifDispatcher,
+		TickInterval:  30 * time.Second,
+		IncidentHooks: incidentHooks,
 	})
 	alertEngine.Start(bgWorkersCtx)
 	go scheduler.Run(bgWorkersCtx, scheduler.Deps{
@@ -229,33 +232,34 @@ func runServe(logger *slog.Logger) error {
 		Dispatcher: notifDispatcher,
 	})
 
-	notifyTickets := func() {
+	notifyIncidents := func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		tickets, err := ws.LoadTicketSnapshot(ctx, pool)
+		incidents, err := ws.LoadIncidentSnapshot(ctx, pool)
 		if err != nil {
-			logger.Error("ticket snapshot broadcast load failed", "err", err)
+			logger.Error("incident snapshot broadcast load failed", "err", err)
 			return
 		}
-		b, err := json.Marshal(ws.TicketSnapshotMsg{
-			Type:    ws.MsgTypeTicketSnapshot,
-			Tickets: tickets,
+		b, err := json.Marshal(ws.IncidentSnapshotMsg{
+			Type:      ws.MsgTypeIncidentSnapshot,
+			Incidents: incidents,
 		})
 		if err != nil {
-			logger.Error("ticket snapshot broadcast encode failed", "err", err)
+			logger.Error("incident snapshot broadcast encode failed", "err", err)
 			return
 		}
 		dashHub.Broadcast(b)
 	}
-	api.NewTicketsHandler(mux, api.TicketsDeps{
-		Pool:             pool,
-		Logger:           logger,
-		Auth:             dashAuth,
-		OnTicketsMutated: notifyTickets,
-		OnINCTicketCreated: func(ctx context.Context, ticketRef, title string, linkedAssetID *uuid.UUID) {
+	api.NewIncidentsHandler(mux, api.IncidentsDeps{
+		Pool:               pool,
+		Logger:             logger,
+		Auth:               dashAuth,
+		C2Hub:              c2Hub,
+		OnIncidentsMutated: notifyIncidents,
+		OnINCIncidentCreated: func(ctx context.Context, incidentNumber, shortDescription string, linkedAssetID *uuid.UUID) {
 			details := map[string]any{
-				"ticket_ref": ticketRef,
-				"title":      title,
+				"incident_number":   incidentNumber,
+				"short_description": shortDescription,
 			}
 			if linkedAssetID != nil {
 				details["device_id"] = linkedAssetID.String()
@@ -266,8 +270,8 @@ func runServe(logger *slog.Logger) error {
 			}
 			notifDispatcher.Notify(notifications.AlertEvent{
 				Type:    notifications.EventTicketINCCreated,
-				Title:   "New incident ticket",
-				Message: fmt.Sprintf("Incident %s created: %s", ticketRef, title),
+				Title:   "New incident",
+				Message: fmt.Sprintf("%s created: %s", incidentNumber, shortDescription),
 				Details: details,
 			})
 		},

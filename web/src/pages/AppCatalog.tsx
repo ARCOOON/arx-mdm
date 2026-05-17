@@ -8,6 +8,12 @@ import {
   createCatalogFromURL,
   type AppCatalogRow,
 } from '../lib/appCatalogApi'
+import {
+  deleteManagedConfig,
+  fetchManagedConfigs,
+  upsertManagedConfig,
+  type ManagedAppConfigRow,
+} from '../lib/mdmEnterpriseApi'
 
 const OS_OPTS = ['windows', 'linux', 'android'] as const
 
@@ -23,6 +29,11 @@ export function AppCatalogPage() {
   const [file, setFile] = useState<File | null>(null)
   const [extUrl, setExtUrl] = useState('')
   const [metaMode, setMetaMode] = useState<'upload' | 'url'>('upload')
+  const [managedCatalogAppId, setManagedCatalogAppId] = useState("")
+  const [managedConfigs, setManagedConfigs] = useState<ManagedAppConfigRow[]>([])
+  const [managedPkg, setManagedPkg] = useState("")
+  const [managedLabel, setManagedLabel] = useState("")
+  const [managedKvJSON, setManagedKvJSON] = useState('{\n  \"demo\": \"value\"\n}')
 
   const reload = useCallback(async () => {
     setErr(null)
@@ -33,6 +44,25 @@ export function AppCatalogPage() {
   useEffect(() => {
     reload().catch((e) => setErr(e instanceof Error ? e.message : String(e)))
   }, [reload])
+
+  async function reloadManagedConfigurations(appId: string) {
+    if (!appId) {
+      setManagedConfigs([])
+      return
+    }
+    const list = await fetchManagedConfigs(appId)
+    setManagedConfigs(list)
+  }
+
+  useEffect(() => {
+    if (!managedCatalogAppId) {
+      setManagedConfigs([])
+      return
+    }
+    reloadManagedConfigurations(managedCatalogAppId).catch((e) =>
+      setErr(e instanceof Error ? e.message : String(e)),
+    )
+  }, [managedCatalogAppId])
 
   async function onUpload(ev: FormEvent) {
     ev.preventDefault()
@@ -302,6 +332,117 @@ export function AppCatalogPage() {
         ) : null}
       </div>
 
+
+      <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-4 text-[12px] text-gray-800 dark:border-gray-800 dark:bg-neutral-950 dark:text-gray-100">
+        <div className="mb-3 text-[10px] font-semibold uppercase text-gray-500 dark:text-gray-400">
+          Managed App Configuration payloads
+        </div>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,320px)_1fr]">
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] uppercase text-gray-500">Catalog artifact</span>
+            <select
+              value={managedCatalogAppId}
+              onChange={(e) => setManagedCatalogAppId(e.target.value)}
+              className="rounded-xl border border-gray-300 bg-white px-2 py-1 text-[12px] dark:border-gray-700 dark:bg-neutral-950"
+            >
+              <option value="">Select package</option>
+              {rows.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.name} · v{entry.version} ({entry.target_os})
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-[11px] text-gray-600 dark:text-gray-400">
+            Server-side KV pairs hydrate Android installs through DevicePolicy managed configuration hooks every heartbeat.
+          </p>
+        </div>
+        <div className="mt-4 space-y-2">
+          {managedConfigs.length === 0 ? (
+            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+              {managedCatalogAppId ? "No managed rows yet." : "Choose a catalog entry to inspect managed rows."}
+            </div>
+          ) : (
+            managedConfigs.map((cfg) => (
+              <div
+                key={cfg.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 px-3 py-2 dark:border-gray-800"
+              >
+                <div className="text-[11px]">
+                  <div className="font-semibold text-gray-900 dark:text-gray-50">{cfg.managed_package_name}</div>
+                  <div className="font-mono text-[10px] text-gray-500">{cfg.id}</div>
+                </div>
+                <button
+                  type="button"
+                  className="text-[11px] text-rose-600 hover:text-rose-500"
+                  disabled={!canOperate}
+                  onClick={() =>
+                    void deleteManagedConfig(managedCatalogAppId, cfg.id).then(() =>
+                      reloadManagedConfigurations(managedCatalogAppId),
+                    )
+                  }
+                >
+                  Delete mapping
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <form
+          className="mt-4 grid gap-2 md:grid-cols-2"
+          onSubmit={(ev) => {
+            ev.preventDefault()
+            void (async () => {
+              if (!managedCatalogAppId || !managedPkg.trim()) return
+              setBusy(true)
+              try {
+                const kv = JSON.parse(managedKvJSON || "{}")
+                await upsertManagedConfig(managedCatalogAppId, {
+                  managed_package_name: managedPkg.trim(),
+                  managed_app_label: managedLabel.trim(),
+                  config_kv: kv,
+                })
+                await reloadManagedConfigurations(managedCatalogAppId)
+                setManagedPkg("")
+              } catch (exc) {
+                setErr(exc instanceof Error ? exc.message : String(exc))
+              } finally {
+                setBusy(false)
+              }
+            })()
+          }}
+        >
+          <input
+            placeholder="Managed package"
+            className="rounded-xl border border-gray-300 bg-white px-2 py-1 dark:border-gray-700 dark:bg-neutral-950"
+            required
+            value={managedPkg}
+            onChange={(e) => setManagedPkg(e.target.value)}
+            disabled={!managedCatalogAppId || !canOperate}
+          />
+          <input
+            placeholder="Label"
+            className="rounded-xl border border-gray-300 bg-white px-2 py-1 dark:border-gray-700 dark:bg-neutral-950"
+            value={managedLabel}
+            onChange={(e) => setManagedLabel(e.target.value)}
+            disabled={!managedCatalogAppId || !canOperate}
+          />
+          <textarea
+            rows={4}
+            className="md:col-span-2 rounded-xl border border-gray-300 bg-white px-2 py-1 font-mono text-[11px] dark:border-gray-700 dark:bg-neutral-950"
+            value={managedKvJSON}
+            onChange={(e) => setManagedKvJSON(e.target.value)}
+            disabled={!managedCatalogAppId || !canOperate}
+          />
+          <button
+            type="submit"
+            className="md:col-span-2 rounded-xl bg-gray-900 px-4 py-2 text-[11px] font-semibold text-white uppercase tracking-wide disabled:opacity-40 dark:bg-white dark:text-neutral-950"
+            disabled={busy || !canOperate || !managedCatalogAppId}
+          >
+            Save managed bundle
+          </button>
+        </form>
+      </div>
       {!canOperate ? (
         <p className="mt-6 text-[12px] text-slate-600">
           You have read-only access; catalog mutations are restricted to operators or

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Power } from 'lucide-react'
+import { ComplianceBadge } from '../components/ComplianceBadge'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { formatBytesPair, formatCpu } from '../lib/format'
 
@@ -43,6 +44,7 @@ export function AssetsPage() {
               <th className="px-2 py-1.5">OS</th>
               <th className="px-2 py-1.5">CPU</th>
               <th className="px-2 py-1.5">RAM (used / total)</th>
+              <th className="px-2 py-1.5">Compliance</th>
               <th className="px-2 py-1.5">C2</th>
               <th className="px-2 py-1.5 text-right">Actions</th>
             </tr>
@@ -51,7 +53,7 @@ export function AssetsPage() {
             {assets.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-3 py-8 text-center text-xs text-slate-500"
                 >
                   No assets in catalog. Connect an agent and post telemetry to
@@ -83,6 +85,9 @@ export function AssetsPage() {
                   </td>
                   <td className="px-2 py-1 text-slate-300">
                     {formatBytesPair(a.memory_used_bytes, a.total_ram_bytes)}
+                  </td>
+                  <td className="px-2 py-1 text-slate-300">
+                    <ComplianceBadge asset={a} />
                   </td>
                   <td className="px-2 py-1">
                     <span

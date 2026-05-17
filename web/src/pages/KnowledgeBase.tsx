@@ -192,7 +192,7 @@ export function KnowledgeBasePage() {
 
       {editorOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4">
-          <div className="flex max-h-[min(100dvh,100vh)] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white shadow-2xl dark:bg-slate-950">
+          <div className="flex max-h-[min(100dvh,100vh)] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-2">
               <span className="text-sm font-medium text-slate-200">
                 {editingId ? 'Edit document' : 'New document'}
@@ -248,7 +248,7 @@ export function KnowledgeBasePage() {
 
       {readOnlyDoc ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4">
-          <div className="max-h-[min(100dvh,100vh)] w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white shadow-2xl dark:bg-slate-950">
+          <div className="max-h-[min(100dvh,100vh)] w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-4 py-2">
               <span className="text-sm font-medium text-slate-200">{readOnlyDoc.title}</span>
               <button

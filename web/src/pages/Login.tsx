@@ -42,7 +42,7 @@ export function LoginPage() {
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white/95 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/90">
+      <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white/95 p-6 dark:border-slate-800 dark:bg-slate-900/90">
         <h1 className={shell.heading}>ARX MDM</h1>
         <p className="mt-1 text-xs text-slate-600 dark:text-slate-500">
           Sign in to the operations dashboard

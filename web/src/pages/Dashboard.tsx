@@ -293,7 +293,7 @@ function MetricCard(props: {
   subtitle?: string
 }) {
   return (
-    <div className="rounded border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 px-3 py-2.5 shadow-sm">
+    <div className="rounded border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 px-3 py-2.5">
       <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">
         {props.icon}
         {props.label}

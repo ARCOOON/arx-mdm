@@ -85,16 +85,6 @@ function parseWorkNotes(raw: unknown): WorkNoteEntry[] {
   return []
 }
 
-function slaAccentClass(dueISO: string, state: string) {
-  const st = (state ?? '').toLowerCase()
-  if (st === 'resolved' || st === 'closed') return 'text-slate-500'
-  const due = Date.parse(dueISO)
-  if (!Number.isFinite(due)) return 'text-slate-500'
-  const leftMs = due - Date.now()
-  if (leftMs < 0) return 'text-rose-400 font-medium'
-  if (leftMs < 30 * 60 * 1000) return 'text-amber-300'
-  return 'text-slate-400'
-}
 
 export function ServiceDeskPage() {
   const { canOperate } = useAuth()
@@ -634,11 +624,11 @@ export function ServiceDeskPage() {
             {STATE_COLUMNS.map((col) => {
               const list = byState.get(col) ?? []
               const sorted = [...list].sort((a, b) => {
-                const xa = Date.parse(a.sla_due)
-                const xb = Date.parse(b.sla_due)
-                const va = Number.isFinite(xa) ? xa : Number.MAX_SAFE_INTEGER
-                const vb = Number.isFinite(xb) ? xb : Number.MAX_SAFE_INTEGER
-                return va - vb
+                const xa = Date.parse(a.updated_at)
+                const xb = Date.parse(b.updated_at)
+                const va = Number.isFinite(xa) ? xa : 0
+                const vb = Number.isFinite(xb) ? xb : 0
+                return vb - va
               })
               return (
                 <div
@@ -689,9 +679,6 @@ export function ServiceDeskPage() {
                             <div className="mt-0.5 line-clamp-2 font-medium text-slate-900 dark:text-slate-100">
                               {t.short_description}
                             </div>
-                            <div className={`mt-1 truncate font-mono text-[10px] ${slaAccentClass(t.sla_due, t.state)}`}>
-                              SLA {new Date(t.sla_due).toLocaleString()}
-                            </div>
                             {t.assigned_to_username ? (
                               <div className="mt-1 truncate text-[10px] text-sky-400/90">
                                 {t.assigned_to_username}
@@ -716,7 +703,7 @@ export function ServiceDeskPage() {
         <aside className="flex min-h-[280px] min-w-0 flex-col border-t border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-950/30 xl:min-h-0 xl:border-t-0">
           {!selectedId ? (
             <div className="flex flex-1 items-center justify-center px-3 py-8 text-center text-[11px] text-slate-500">
-              Select a card for CMDB telemetry, SLA fields, resolutions, work notes, and C2 shortcuts.
+              Select a card for CMDB telemetry, resolutions, work notes, and shortcuts.
             </div>
           ) : loadingDetail ? (
             <div className="p-3 text-[11px] text-slate-500">Loading incident…</div>

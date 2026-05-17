@@ -9,7 +9,9 @@ import { FileExplorer } from '../components/FileExplorer'
 import { AndroidPolicies } from '../components/AndroidPolicies'
 import { DeviceCommandPanel } from '../components/DeviceCommandPanel'
 import { DeviceMetricsCharts } from '../components/DeviceMetricsCharts'
+import { EffectivePoliciesTab } from './Devices/EffectivePoliciesTab'
 import { AssetInfoSection } from '../components/AssetInfoSection'
+import { ComplianceBadge } from '../components/ComplianceBadge'
 import { formatBytesPair, formatCpu } from '../lib/format'
 import {
   assignAppToDevice,
@@ -19,12 +21,19 @@ import {
   type DeviceAppRow,
 } from '../lib/appCatalogApi'
 import { postDeviceLock, postDeviceWipe } from '../lib/deviceSecurityApi'
+import { patchDeviceQuarantine } from '../lib/deviceQuarantineApi'
 import type {
   NetworkInterfaceWire,
   TelemetryInstalledApp,
 } from '../types/ws'
 
-type Tab = 'overview' | 'software' | 'files' | 'system' | 'android_mdm'
+type Tab =
+  | 'overview'
+  | 'software'
+  | 'files'
+  | 'system'
+  | 'android_mdm'
+  | 'effective_policies'
 
 function catalogTargetFromAsset(asset?: {
   os_type?: string
@@ -102,6 +111,8 @@ export function AssetDetailPage() {
   const [securityMsg, setSecurityMsg] = useState<string | null>(null)
   const [lockBusy, setLockBusy] = useState(false)
   const [wipeBusy, setWipeBusy] = useState(false)
+  const [quarantineBusy, setQuarantineBusy] = useState(false)
+  const [quarantineMsg, setQuarantineMsg] = useState<string | null>(null)
   const {
     assets,
     sendJson,
@@ -252,6 +263,33 @@ export function AssetDetailPage() {
     }
   }
 
+  async function submitQuarantineToggle(enabled: boolean) {
+    const id = asset?.id?.trim()
+    if (!id) {
+      return
+    }
+    setQuarantineBusy(true)
+    setQuarantineMsg(null)
+    try {
+      const res = await patchDeviceQuarantine(id, enabled)
+      setQuarantineMsg(
+        res.dispatched
+          ? enabled
+            ? 'Isolation command dispatched to the agent.'
+            : 'Release command dispatched to the agent.'
+          : enabled
+            ? 'Isolation queued; it will deliver on the next C2 session.'
+            : 'Release queued; it will deliver on the next C2 session.',
+      )
+    } catch (e) {
+      setQuarantineMsg(
+        e instanceof Error ? e.message : 'Quarantine request failed.',
+      )
+    } finally {
+      setQuarantineBusy(false)
+    }
+  }
+
   const isWindows = useMemo(() => {
     const os = (asset?.os ?? '').toLowerCase()
     return os.includes('windows')
@@ -372,6 +410,7 @@ export function AssetDetailPage() {
           {tabBtn('files', 'Files')}
           {tabBtn('system', 'System config')}
           {isAndroid ? tabBtn('android_mdm', 'Android MDM') : null}
+          {asset.id ? tabBtn('effective_policies', 'Effective policies') : null}
         </div>
       ) : null}
 
@@ -382,7 +421,7 @@ export function AssetDetailPage() {
         </p>
       ) : tab === 'overview' ? (
         <>
-          <div className="mb-6 grid gap-3 text-[12px] text-slate-300 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-6 grid gap-3 text-[12px] text-slate-300 sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
               <div className="text-[10px] font-semibold uppercase text-slate-500">
                 Hostname
@@ -415,6 +454,14 @@ export function AssetDetailPage() {
                 {formatBytesPair(asset.memory_used_bytes, asset.total_ram_bytes)}
               </div>
             </div>
+            <div className="rounded border border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-900/40 px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase text-slate-500">
+                Compliance
+              </div>
+              <div className="mt-1">
+                {asset ? <ComplianceBadge asset={asset} /> : null}
+              </div>
+            </div>
           </div>
 
           {asset.id ? (
@@ -440,16 +487,23 @@ export function AssetDetailPage() {
             </div>
           ) : null}
 
-          {isAdmin && asset.id ? (
+          {(canOperate || isAdmin) && asset.id ? (
             <div className="mb-8 rounded border border-rose-800/60 bg-rose-950/15 p-4 text-[12px] text-slate-200">
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-rose-300/95">
                 Danger zone
               </div>
               <p className="mb-4 text-[11px] text-slate-400">
-                Remote lock and enterprise wipe are audited and require an online
-                C2 session. Wipe removes ARX enrollment and agent binaries on
-                desktop endpoints or factory-resets managed Android devices.
+                Network isolation restricts traffic to the MDM server until
+                released. Remote lock and enterprise wipe are audited and
+                require an online C2 session. Wipe removes ARX enrollment and
+                agent binaries on desktop endpoints or factory-resets managed
+                Android devices.
               </p>
+              {quarantineMsg ? (
+                <div className="mb-4 rounded border border-slate-600 bg-slate-900/60 px-3 py-2 text-[11px] text-slate-200">
+                  {quarantineMsg}
+                </div>
+              ) : null}
               {securityMsg ? (
                 <div className="mb-4 rounded border border-slate-600 bg-slate-900/60 px-3 py-2 text-[11px] text-slate-200">
                   {securityMsg}
@@ -458,24 +512,46 @@ export function AssetDetailPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={!asset.c2_connected || lockBusy}
-                  onClick={() => void submitLockDevice()}
-                  className="rounded border border-amber-700/80 bg-amber-950/40 px-3 py-2 text-[11px] font-medium text-amber-100 hover:bg-amber-900/50 disabled:opacity-40"
+                  disabled={quarantineBusy || !asset.id}
+                  onClick={() =>
+                    void submitQuarantineToggle(!asset.quarantine_enabled)
+                  }
+                  className={`rounded border px-3 py-2 text-[11px] font-medium disabled:opacity-40 ${
+                    asset.quarantine_enabled
+                      ? 'border-emerald-700/80 text-emerald-100 hover:bg-emerald-950/30'
+                      : 'border-violet-700/80 text-violet-100 hover:bg-violet-950/30'
+                  }`}
                 >
-                  {lockBusy ? 'Locking…' : 'Lock device'}
+                  {quarantineBusy
+                    ? 'Updating isolation…'
+                    : asset.quarantine_enabled
+                      ? 'Release isolation'
+                      : 'Isolate device (quarantine)'}
                 </button>
-                <button
-                  type="button"
-                  disabled={!asset.c2_connected || wipeBusy}
-                  onClick={() => {
-                    setSecurityMsg(null)
-                    setWipeConfirmInput('')
-                    setWipeModalOpen(true)
-                  }}
-                  className="rounded border border-rose-700 bg-rose-950/50 px-3 py-2 text-[11px] font-medium text-rose-100 hover:bg-rose-900/60 disabled:opacity-40"
-                >
-                  Wipe device…
-                </button>
+                {isAdmin ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={!asset.c2_connected || lockBusy}
+                      onClick={() => void submitLockDevice()}
+                      className="rounded border border-amber-700/80 bg-amber-950/40 px-3 py-2 text-[11px] font-medium text-amber-100 hover:bg-amber-900/50 disabled:opacity-40"
+                    >
+                      {lockBusy ? 'Locking…' : 'Lock device'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!asset.c2_connected || wipeBusy}
+                      onClick={() => {
+                        setSecurityMsg(null)
+                        setWipeConfirmInput('')
+                        setWipeModalOpen(true)
+                      }}
+                      className="rounded border border-rose-700 bg-rose-950/50 px-3 py-2 text-[11px] font-medium text-rose-100 hover:bg-rose-900/60 disabled:opacity-40"
+                    >
+                      Wipe device…
+                    </button>
+                  </>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -565,7 +641,7 @@ export function AssetDetailPage() {
               role="dialog"
               aria-modal="true"
             >
-              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-slate-700 bg-slate-900 p-4 text-[12px] text-slate-100 shadow-xl">
+              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-slate-700 bg-slate-900 p-4 text-[12px] text-slate-100">
                 <div className="mb-3 flex justify-between gap-2">
                   <div className="font-semibold">Deploy catalog package</div>
                   <button
@@ -620,7 +696,7 @@ export function AssetDetailPage() {
               aria-modal="true"
               aria-labelledby="wipe-dialog-title"
             >
-              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-rose-900/80 bg-slate-900 p-4 text-[12px] text-slate-100 shadow-xl">
+              <div className="max-h-[min(100dvh,100vh)] w-full max-w-md overflow-y-auto overscroll-contain rounded-lg border border-rose-900/80 bg-slate-900 p-4 text-[12px] text-slate-100">
                 <div className="mb-3 flex justify-between gap-2">
                   <div id="wipe-dialog-title" className="font-semibold text-rose-100">
                     Confirm enterprise wipe
@@ -785,6 +861,14 @@ export function AssetDetailPage() {
       ) : tab === 'android_mdm' ? (
         asset.id ? (
           <AndroidPolicies assetId={asset.id} humanId={decodedId} />
+        ) : (
+          <p className="text-sm text-slate-500">
+            Asset id is not available yet. Wait for catalog sync.
+          </p>
+        )
+      ) : tab === 'effective_policies' ? (
+        asset.id ? (
+          <EffectivePoliciesTab deviceId={asset.id} />
         ) : (
           <p className="text-sm text-slate-500">
             Asset id is not available yet. Wait for catalog sync.

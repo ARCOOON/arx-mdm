@@ -1,0 +1,17 @@
+---
+description: Automatically keep the README.md synchronized with codebase changes.
+globs: *
+---
+# Continuous Documentation Maintenance
+
+CRITICAL REQUIREMENT: Keep `README.md` synchronized with codebase changes incrementally. Never rewrite the entire file unless explicitly requested.
+
+1. Trigger Condition:
+   - When generating code, adding new features, altering architectural structures, changing environment variables, or removing dependencies, automatically verify if the `README.md` requires an update.
+   - Ignore minor bug fixes, refactoring, or UI tweaks that do not affect the high-level system documentation.
+
+2. Incremental Update Strategy:
+   - Read the existing `README.md`.
+   - Identify the specific section (e.g., "Features", "Environment Variables", "Architecture", "Setup") that correlates with the new code.
+   - Modify, append, or delete ONLY the relevant lines or bullet points within that specific section.
+   - Preserve the existing tone, formatting, and structure of the document. Do not regenerate sections that were unaffected by the current task.

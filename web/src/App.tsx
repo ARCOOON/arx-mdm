@@ -22,6 +22,8 @@ import { UsersPage } from './pages/Users'
 import { KnowledgeBasePage } from './pages/KnowledgeBase'
 import { AuditLogsPage } from './pages/AuditLogs'
 import { SettingsPage } from './pages/Settings'
+import { ConfigurationProfilesPage } from './pages/ConfigurationProfiles'
+import { PrincipalGroupsPage } from './pages/PrincipalGroups'
 
 function RequireAuth() {
   const { token, user, loading } = useAuth()
@@ -29,7 +31,7 @@ function RequireAuth() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-sm text-gray-600 dark:bg-neutral-950 dark:text-gray-400">
         Loading…
       </div>
     )
@@ -56,6 +58,8 @@ function AppRoutes() {
           <Route path="assets/:humanId" element={<AssetDetailPage />} />
           <Route path="software" element={<SoftwarePage />} />
           <Route path="app-catalog" element={<AppCatalogPage />} />
+          <Route path="mdm-profiles" element={<ConfigurationProfilesPage />} />
+          <Route path="device-cohorts" element={<PrincipalGroupsPage />} />
           <Route path="automations" element={<AutomationsPage />} />
           <Route path="service-desk" element={<ServiceDeskPage />} />
           <Route path="tickets" element={<Navigate to="/service-desk" replace />} />

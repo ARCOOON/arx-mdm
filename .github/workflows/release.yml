@@ -11,48 +11,106 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: auto
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
         with:
-          go-version: stable
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: "20"
 
-      - name: Build web dashboard
+      - name: Install web dependencies and build React frontend
         run: |
           set -euo pipefail
           cd web
-          npm ci && npm run build
+          npm ci
+          npm run build
           cd ..
           rm -rf internal/api/webui/dist
           mkdir -p internal/api/webui/dist
           cp -a web/dist/. internal/api/webui/dist/
 
-      - name: Cross-compile binaries
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Sync install scripts and cross-compile server and agent
         run: |
           set -euo pipefail
-          mkdir -p build
+          cp scripts/install_linux.sh internal/serverinstall/install_linux.sh
+          cp scripts/install_windows.ps1 internal/serverinstall/install_windows.ps1
+          mkdir -p build_assets
           export CGO_ENABLED=0
-          GOOS=linux GOARCH=amd64 go build -trimpath -tags embedui -o build/arx-server-linux-amd64 ./cmd/server
-          GOOS=windows GOARCH=amd64 go build -trimpath -tags embedui -o build/arx-server-windows-amd64.exe ./cmd/server
-          GOOS=linux GOARCH=amd64 go build -trimpath -o build/arx-agent-linux-amd64 ./cmd/agent
-          GOOS=windows GOARCH=amd64 go build -trimpath -o build/arx-agent-windows-amd64.exe ./cmd/agent
-          chmod +x build/arx-server-linux-amd64 build/arx-agent-linux-amd64
+          GOOS=linux GOARCH=amd64 go build -trimpath -tags embedui -o build_assets/arx-server-linux-amd64 ./cmd/server
+          GOOS=windows GOARCH=amd64 go build -trimpath -tags embedui -o build_assets/arx-server-windows-amd64.exe ./cmd/server
+          GOOS=linux GOARCH=amd64 go build -trimpath -o build_assets/arx-agent-linux-amd64 ./cmd/agent
+          GOOS=windows GOARCH=amd64 go build -trimpath -o build_assets/arx-agent-windows-amd64.exe ./cmd/agent
+          chmod +x build_assets/arx-server-linux-amd64 build_assets/arx-agent-linux-amd64
+
+      - name: Set up Java 17 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0 ndk;26.1.10909125"
+
+      - name: Bind gomobile AAR and build Android release APK
+        run: |
+          set -euo pipefail
+          : "${ANDROID_SDK_ROOT:?ANDROID_SDK_ROOT is not set}"
+          export ANDROID_HOME="${ANDROID_SDK_ROOT}"
+          NDK_HOME="$(find "${ANDROID_SDK_ROOT}/ndk" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1 || true)"
+          if [ -n "${NDK_HOME}" ]; then
+            export ANDROID_NDK_HOME="${NDK_HOME}"
+          fi
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          GOMOBILE="$(go env GOPATH)/bin/gomobile"
+          "${GOMOBILE}" init
+          mkdir -p mobile/android/app/libs
+          "${GOMOBILE}" bind -target=android -o mobile/android/app/libs/agentbind.aar ./mobile/agentbind
+          GRADLE_VERSION="8.7"
+          curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          export PATH="/tmp/gradle-${GRADLE_VERSION}/bin:${PATH}"
+          (cd mobile/android && gradle assembleRelease --no-daemon)
+          apk="$(find mobile/android/app/build/outputs/apk/release -name '*.apk' | head -n1)"
+          test -n "${apk}"
+          cp -f "${apk}" build_assets/app-release.apk
+
+      - name: Generate CHANGELOG
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          current_tag="${GITHUB_REF_NAME}"
+          prev_tag="$(git tag -l 'v*' --sort=-version:refname | awk -v cur="${current_tag}" '$0 != cur { print; exit }')"
+          if [ -z "${prev_tag}" ]; then
+            git log "${current_tag}" --pretty=format:'* %s (%h)%n' > CHANGELOG.md
+          else
+            git log "${prev_tag}..${current_tag}" --pretty=format:'* %s (%h)%n' > CHANGELOG.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: CHANGELOG.md
           fail_on_unmatched_files: true
           files: |
-            build/arx-server-linux-amd64
-            build/arx-server-windows-amd64.exe
-            build/arx-agent-linux-amd64
-            build/arx-agent-windows-amd64.exe
+            build_assets/arx-server-linux-amd64
+            build_assets/arx-server-windows-amd64.exe
+            build_assets/arx-agent-linux-amd64
+            build_assets/arx-agent-windows-amd64.exe
+            build_assets/app-release.apk

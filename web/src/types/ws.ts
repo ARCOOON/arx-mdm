@@ -19,6 +19,9 @@ export type AssetRow = {
   last_seen?: string
   c2_connected: boolean
   installed_software?: TelemetryInstalledApp[]
+  compliance_status?: string
+  compliance_reason?: string
+  quarantine_enabled?: boolean
 }
 
 export type IncidentRow = {

@@ -88,14 +88,14 @@ export function NotificationCenter() {
       >
         <Bell className="size-3.5" />
         {openCount > 0 ? (
-          <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-600 px-[3px] text-center font-mono text-[9px] font-semibold text-white shadow-sm">
+          <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-rose-600 px-[3px] text-center font-mono text-[9px] font-semibold text-white">
             {openCount > 99 ? '99+' : openCount}
           </span>
         ) : null}
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-950">
+        <div className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
           <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-800">
             <div className={`${shell.label} !tracking-normal normal-case text-slate-600 dark:text-slate-300`}>
               Notification Center
